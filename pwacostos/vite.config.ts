@@ -13,7 +13,7 @@ export default defineConfig({
         name: 'CostApp - Registro de Costos',
         short_name: 'CostApp',
         description: 'Aplicación para registrar costos de lugares',
-        theme_color: '#6366f1',
+        theme_color: '#f59e0b',
         background_color: '#0f172a',
         display: 'standalone',
         orientation: 'portrait',

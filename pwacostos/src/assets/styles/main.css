@@ -5,17 +5,17 @@
 
 /* ---- CSS Variables ---- */
 :root {
-  --primary: #6366f1;
-  --primary-light: #818cf8;
-  --primary-dark: #4f46e5;
-  --primary-glow: rgba(99, 102, 241, 0.25);
-  --accent: #8b5cf6;
-  --accent-light: #a78bfa;
+  --primary: #f59e0b;
+  --primary-light: #fbbf24;
+  --primary-dark: #d97706;
+  --primary-glow: rgba(245, 158, 11, 0.25);
+  --accent: #22c55e;
+  --accent-light: #4ade80;
 
   --success: #22c55e;
   --success-bg: rgba(34, 197, 94, 0.12);
-  --warning: #f59e0b;
-  --warning-bg: rgba(245, 158, 11, 0.12);
+  --warning: #eab308;
+  --warning-bg: rgba(234, 179, 8, 0.12);
   --danger: #ef4444;
   --danger-bg: rgba(239, 68, 68, 0.12);
   --info: #3b82f6;
@@ -140,7 +140,7 @@ input {
 .auth-bg-shape--1 {
   width: 300px;
   height: 300px;
-  background: var(--primary);
+  background: #f59e0b;
   top: -80px;
   right: -60px;
   animation-delay: 0s;
@@ -149,7 +149,7 @@ input {
 .auth-bg-shape--2 {
   width: 250px;
   height: 250px;
-  background: var(--accent);
+  background: #22c55e;
   bottom: -50px;
   left: -80px;
   animation-delay: -4s;
@@ -158,7 +158,7 @@ input {
 .auth-bg-shape--3 {
   width: 180px;
   height: 180px;
-  background: #06b6d4;
+  background: #eab308;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -339,7 +339,7 @@ input {
 }
 .password-strength__fill--weak { background: var(--danger); }
 .password-strength__fill--medium { background: var(--warning); }
-.password-strength__fill--strong { background: var(--info); }
+.password-strength__fill--strong { background: #f59e0b; }
 .password-strength__fill--excellent { background: var(--success); }
 
 .password-strength__label {
