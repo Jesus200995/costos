@@ -9,7 +9,7 @@
           <h1 class="home-welcome__title">
             Hola, <span>{{ authStore.user?.name?.split(' ')[0] || 'Usuario' }}</span> 👋
           </h1>
-          <p class="home-welcome__subtitle">Bienvenido a tu gestor de costos</p>
+          <p class="home-welcome__subtitle">Gestión de cultivos y productos</p>
         </div>
         <div class="home-avatar" @click.stop="showProfileModal = true">
           <span>{{ initials }}</span>

@@ -62,7 +62,7 @@
           <LogOut :size="20" />
           <span>Cerrar Sesión</span>
         </button>
-        <p class="sidebar__version">CostApp v1.0.0</p>
+        <p class="sidebar__version">COSTOS v1.0.0</p>
       </div>
     </aside>
   </Transition>

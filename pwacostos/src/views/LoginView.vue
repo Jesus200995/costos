@@ -9,10 +9,10 @@
     <div class="auth-container" :class="{ 'auth-container--visible': mounted }">
       <div class="auth-logo">
         <div class="auth-logo__icon">
-          <DollarSign :size="32" />
+          <Wheat :size="32" />
         </div>
-        <h1 class="auth-logo__title">CostApp</h1>
-        <p class="auth-logo__subtitle">Gestión inteligente de costos</p>
+        <h1 class="auth-logo__title">COSTOS</h1>
+        <p class="auth-logo__subtitle">Cultivos y Productos</p>
       </div>
 
       <form class="auth-form" @submit.prevent="handleLogin" novalidate>
@@ -85,7 +85,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import {
-  DollarSign, Mail, Lock, Eye, EyeOff, LogIn,
+  Wheat, Mail, Lock, Eye, EyeOff, LogIn,
   ArrowRight, Loader2, AlertCircle
 } from 'lucide-vue-next'
 

@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
-        name: 'CostApp - Registro de Costos',
-        short_name: 'CostApp',
-        description: 'Aplicación para registrar costos de lugares',
+        name: 'COSTOS: Cultivos y Productos',
+        short_name: 'COSTOS',
+        description: 'Gestión de costos de cultivos y productos agrícolas',
         theme_color: '#f59e0b',
         background_color: '#0f172a',
         display: 'standalone',

@@ -6,8 +6,8 @@
       <span class="burger-line" :class="{ 'burger-line--open': ui.sidebarOpen }"></span>
     </button>
     <div class="navbar__brand">
-      <DollarSign :size="22" />
-      <span>CostApp</span>
+      <Wheat :size="22" />
+      <span>COSTOS</span>
     </div>
     <button class="navbar__action" @click="$emit('search')" aria-label="Buscar">
       <Bell :size="22" />
@@ -17,7 +17,7 @@
 
 <script setup lang="ts">
 import { useUiStore } from '@/stores/ui'
-import { DollarSign, Bell } from 'lucide-vue-next'
+import { Wheat, Bell } from 'lucide-vue-next'
 
 defineEmits<{ search: [] }>()
 

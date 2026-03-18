@@ -12,7 +12,7 @@
           <UserPlus :size="32" />
         </div>
         <h1 class="auth-logo__title">Crear Cuenta</h1>
-        <p class="auth-logo__subtitle">Únete a CostApp</p>
+        <p class="auth-logo__subtitle">Únete a COSTOS</p>
       </div>
 
       <form class="auth-form" @submit.prevent="handleRegister" novalidate>
