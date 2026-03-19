@@ -3,8 +3,9 @@ module.exports = {
     {
       name: 'costos-backend',
       cwd: '/var/www/costos/backend',
-      script: 'node_modules/.bin/tsx',
+      script: './node_modules/.bin/tsx',
       args: 'src/index.ts',
+      exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
         PORT: 3001

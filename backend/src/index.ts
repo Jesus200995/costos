@@ -6,7 +6,7 @@ import authRoutes from './routes/auth.routes.js'
 const app = express()
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:4173'],
+  origin: ['http://localhost:5173', 'http://localhost:4173', 'https://costos.sembrandodatos.com'],
   credentials: true
 }))
 

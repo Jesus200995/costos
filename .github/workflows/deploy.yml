@@ -2,7 +2,7 @@ name: Deploy COSTOS
 
 on:
   push:
-    branches: [master]
+    branches: [main]
 
 jobs:
   deploy:
@@ -16,5 +16,5 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
             cd /var/www/costos
-            git pull origin master
+            git pull origin main
             bash deploy/deploy.sh

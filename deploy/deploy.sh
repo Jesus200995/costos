@@ -18,11 +18,14 @@ cd "$APP_DIR"
 echo "📦 Instalando dependencias del backend..."
 cd "$APP_DIR/backend"
 npm ci --production 2>/dev/null || npm install --production
+npm rebuild better-sqlite3
 
 # Copiar .env si no existe
 if [ ! -f .env ]; then
-    cp .env.example .env
-    echo "⚠️  Archivo .env creado desde .env.example - Revisa la configuración"
+    echo 'PORT=3001' > .env
+    echo 'JWT_SECRET=costos_prod_secret_change_me' >> .env
+    echo 'DB_PATH=./data/costos.db' >> .env
+    echo "⚠️  Archivo .env creado - Revisa la configuración"
 fi
 
 # Crear directorio de data
@@ -38,10 +41,9 @@ npx vite build
 
 # Reiniciar backend con PM2
 echo "🔄 Reiniciando backend..."
-cd "$APP_DIR"
-pm2 startOrRestart deploy/ecosystem.config.cjs --update-env
-
-# Guardar config PM2
+cd "$APP_DIR/backend"
+pm2 delete costos-backend 2>/dev/null || true
+pm2 start node_modules/.bin/tsx --name costos-backend -- src/index.ts
 pm2 save
 
 echo "✅ Despliegue completado exitosamente!"
