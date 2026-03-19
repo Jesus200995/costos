@@ -266,7 +266,7 @@
               <button type="button" class="btn btn--outline" @click="step = 2">
                 <ChevronLeft :size="20" /> Anterior
               </button>
-              <button type="submit" class="btn btn--primary" :disabled="authStore.loading">
+              <button type="submit" class="btn btn--primary" :disabled="authStore.loading || !canSubmit">
                 <Loader2 v-if="authStore.loading" :size="20" class="spin" />
                 <UserPlus v-else :size="20" />
                 <span>{{ authStore.loading ? 'Creando...' : 'Registrarse' }}</span>
@@ -416,6 +416,25 @@ const strengthText = computed(() => {
   return map[strengthLevel.value]
 })
 
+const canSubmit = computed(() => {
+  // Common required fields
+  if (!form.email.trim()) return false
+  if (!form.password || form.password.length < 6) return false
+  if (form.password !== form.confirmPassword) return false
+  if (!form.tipo_capturista) return false
+  if (!form.name.trim() || form.name.trim().length < 2) return false
+  if (!form.curp.trim() || form.curp.trim().length !== 18) return false
+  if (!form.estado) return false
+  if (!form.municipio) return false
+  if (!form.consent) return false
+  // Role-specific required
+  if (form.tipo_capturista === 'REPRESENTANTE_CAC') {
+    if (!form.cac_id.trim()) return false
+    if (!form.cac_nombre.trim()) return false
+  }
+  return true
+})
+
 onMounted(async () => {
   setTimeout(() => { mounted.value = true }, 50)
   try {
@@ -533,6 +552,11 @@ async function handleRegister() {
   color: var(--text-primary, #1e293b);
   margin-bottom: 1rem;
   text-align: center;
+}
+.step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 .step-slide-enter-active,
 .step-slide-leave-active {
