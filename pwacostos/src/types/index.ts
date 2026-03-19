@@ -68,4 +68,5 @@ export interface Municipio {
   clave_mun: number
   nomgeo: string
   cve_ent: string
+  territorio?: string | null
 }

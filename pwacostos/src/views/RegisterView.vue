@@ -114,7 +114,7 @@
               <label class="form-label">Municipio</label>
               <div class="form-input-wrapper">
                 <MapPin :size="20" class="form-icon" />
-                <select v-model="form.municipio" :disabled="!form.estado || loadingMunicipios" @focus="focused = 'municipio'" @blur="focused = ''">
+                <select v-model="form.municipio" :disabled="!form.estado || loadingMunicipios" @change="onMunicipioChange" @focus="focused = 'municipio'" @blur="focused = ''">
                   <option :value="0" disabled>{{ loadingMunicipios ? 'Cargando...' : 'Selecciona municipio' }}</option>
                   <option v-for="m in municipios" :key="m.clave_mun" :value="m.clave_mun">{{ m.nomgeo }}</option>
                 </select>
@@ -175,10 +175,10 @@
               </div>
 
               <div class="form-group" :class="{ 'form-group--focus': focused === 'territorio' }">
-                <label class="form-label">Territorio <span class="form-optional">(opcional)</span></label>
-                <div class="form-input-wrapper">
+                <label class="form-label">Territorio <span v-if="!territorioFromCatalog" class="form-optional">(opcional)</span><span v-else class="form-auto-tag">Automático</span></label>
+                <div class="form-input-wrapper" :class="{ 'form-input-wrapper--readonly': territorioFromCatalog }">
                   <MapIcon :size="20" class="form-icon" />
-                  <input v-model="form.territorio" type="text" placeholder="Territorio" @focus="focused = 'territorio'" @blur="focused = ''" />
+                  <input v-model="form.territorio" type="text" placeholder="Territorio" :readonly="territorioFromCatalog" @focus="focused = 'territorio'" @blur="focused = ''" />
                 </div>
               </div>
             </template>
@@ -304,6 +304,7 @@ const totalSteps = 3
 const estados = ref<Estado[]>([])
 const municipios = ref<Municipio[]>([])
 const loadingMunicipios = ref(false)
+const territorioFromCatalog = ref(false)
 
 const form = reactive({
   name: '',
@@ -370,6 +371,8 @@ onMounted(async () => {
 
 async function onEstadoChange() {
   form.municipio = 0
+  form.territorio = ''
+  territorioFromCatalog.value = false
   municipios.value = []
   if (!form.estado) return
   loadingMunicipios.value = true
@@ -377,6 +380,17 @@ async function onEstadoChange() {
     municipios.value = await catalogoService.getMunicipios(form.estado)
   } catch { /* silencioso */ }
   loadingMunicipios.value = false
+}
+
+function onMunicipioChange() {
+  const selected = municipios.value.find(m => m.clave_mun === form.municipio)
+  if (selected?.territorio) {
+    form.territorio = selected.territorio
+    territorioFromCatalog.value = true
+  } else {
+    form.territorio = ''
+    territorioFromCatalog.value = false
+  }
 }
 
 function clearErrors() {
@@ -528,6 +542,24 @@ async function handleRegister() {
 .form-input-wrapper select:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+.form-input-wrapper--readonly {
+  background: #f1f5f9;
+  border-color: #e2e8f0 !important;
+}
+.form-input-wrapper--readonly input {
+  color: #64748b;
+  cursor: not-allowed;
+}
+.form-auto-tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #16a34a;
+  background: #dcfce7;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
 }
 .form-group--consent {
   margin-top: 1rem;

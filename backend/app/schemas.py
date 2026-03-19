@@ -63,3 +63,4 @@ class MunicipioOut(BaseModel):
     clave_mun: int
     nomgeo: str
     cve_ent: str
+    territorio: Optional[str] = None
