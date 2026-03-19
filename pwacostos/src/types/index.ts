@@ -4,6 +4,7 @@ export interface User {
   email: string
   avatar?: string
   createdAt: string
+  curp?: string
   tipo_capturista?: string
   estado?: string
   municipio?: number
@@ -28,6 +29,7 @@ export interface RegisterPayload {
   email: string
   password: string
   confirmPassword: string
+  curp: string
   tipo_capturista: string
   estado: string
   municipio: number

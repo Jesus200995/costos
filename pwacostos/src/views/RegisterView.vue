@@ -93,9 +93,18 @@
               <label class="form-label">Nombre completo</label>
               <div class="form-input-wrapper">
                 <User :size="20" class="form-icon" />
-                <input v-model="form.name" type="text" placeholder="Nombre y apellido" autocomplete="name" @focus="focused = 'name'" @blur="focused = ''" />
+                <input v-model="form.name" type="text" placeholder="Nombre y apellido" autocomplete="name" style="text-transform: uppercase" @input="form.name = toUpperNoTilde(form.name)" @focus="focused = 'name'" @blur="focused = ''" />
               </div>
               <Transition name="slide-error"><span v-if="errors.name" class="form-error">{{ errors.name }}</span></Transition>
+            </div>
+
+            <div class="form-group" :class="{ 'form-group--error': errors.curp, 'form-group--focus': focused === 'curp' }">
+              <label class="form-label">CURP</label>
+              <div class="form-input-wrapper">
+                <Hash :size="20" class="form-icon" />
+                <input v-model="form.curp" type="text" placeholder="CURP (18 caracteres)" maxlength="18" style="text-transform: uppercase" @input="form.curp = form.curp.toUpperCase().replace(/[^A-Z0-9]/g, '')" @focus="focused = 'curp'" @blur="focused = ''" />
+              </div>
+              <Transition name="slide-error"><span v-if="errors.curp" class="form-error">{{ errors.curp }}</span></Transition>
             </div>
 
             <div class="form-group" :class="{ 'form-group--error': errors.estado, 'form-group--focus': focused === 'estado' }">
@@ -126,7 +135,7 @@
               <label class="form-label">Localidad / Comunidad <span class="form-optional">(opcional)</span></label>
               <div class="form-input-wrapper">
                 <Home :size="20" class="form-icon" />
-                <input v-model="form.localidad" type="text" placeholder="Localidad" @focus="focused = 'localidad'" @blur="focused = ''" />
+                <input v-model="form.localidad" type="text" placeholder="Localidad" style="text-transform: uppercase" @input="form.localidad = toUpperNoTilde(form.localidad)" @focus="focused = 'localidad'" @blur="focused = ''" />
               </div>
             </div>
 
@@ -134,7 +143,7 @@
               <label class="form-label">Teléfono <span class="form-optional">(opcional)</span></label>
               <div class="form-input-wrapper">
                 <Phone :size="20" class="form-icon" />
-                <input v-model="form.telefono" type="tel" placeholder="Ej. 7710000000" @focus="focused = 'telefono'" @blur="focused = ''" />
+                <input v-model="form.telefono" type="tel" placeholder="Ej. 7710000000" maxlength="10" @input="form.telefono = form.telefono.replace(/[^0-9]/g, '')" @focus="focused = 'telefono'" @blur="focused = ''" />
               </div>
             </div>
 
@@ -169,7 +178,7 @@
                 <label class="form-label">Nombre del CAC</label>
                 <div class="form-input-wrapper">
                   <Building :size="20" class="form-icon" />
-                  <input v-model="form.cac_nombre" type="text" placeholder="CAC Semillas del Futuro" @focus="focused = 'cac_nombre'" @blur="focused = ''" />
+                  <input v-model="form.cac_nombre" type="text" placeholder="CAC SEMILLAS DEL FUTURO" style="text-transform: uppercase" @input="form.cac_nombre = toUpperNoTilde(form.cac_nombre)" @focus="focused = 'cac_nombre'" @blur="focused = ''" />
                 </div>
                 <Transition name="slide-error"><span v-if="errors.cac_nombre" class="form-error">{{ errors.cac_nombre }}</span></Transition>
               </div>
@@ -178,7 +187,10 @@
                 <label class="form-label">Territorio <span v-if="!territorioFromCatalog" class="form-optional">(opcional)</span><span v-else class="form-auto-tag">Automático</span></label>
                 <div class="form-input-wrapper" :class="{ 'form-input-wrapper--readonly': territorioFromCatalog }">
                   <MapIcon :size="20" class="form-icon" />
-                  <input v-model="form.territorio" type="text" placeholder="Territorio" :readonly="territorioFromCatalog" @focus="focused = 'territorio'" @blur="focused = ''" />
+                  <select v-model="form.territorio" :disabled="territorioFromCatalog" @focus="focused = 'territorio'" @blur="focused = ''">
+                    <option value="">Selecciona territorio</option>
+                    <option v-for="t in territorioOptions" :key="t" :value="t">{{ t }}</option>
+                  </select>
                 </div>
               </div>
             </template>
@@ -219,11 +231,11 @@
                   <select v-model="form.rol_interno" @focus="focused = 'rol_interno'" @blur="focused = ''">
                     <option value="">Selecciona rol</option>
                     <option value="Director General">Director General</option>
-                    <option value="Director de área">Director de área</option>
-                    <option value="Facilitador comunitario">Facilitador comunitario</option>
+                    <option value="Director de Área">Director de Área</option>
+                    <option value="Facilitador Comunitario">Facilitador Comunitario</option>
                     <option value="JUD">JUD</option>
-                    <option value="Técnico social">Técnico social</option>
-                    <option value="Técnico productivo">Técnico productivo</option>
+                    <option value="Técnico Social">Técnico Social</option>
+                    <option value="Técnico Productivo">Técnico Productivo</option>
                   </select>
                 </div>
               </div>
@@ -306,11 +318,52 @@ const municipios = ref<Municipio[]>([])
 const loadingMunicipios = ref(false)
 const territorioFromCatalog = ref(false)
 
+const territorioOptions = [
+  'Acapulco - Centro - Norte - Tierra Caliente',
+  'Acayucan',
+  'Balancán',
+  'Chihuahua / Sonora',
+  'Colima',
+  'Comalcalco',
+  'Córdoba',
+  'Costa Chica - Montaña',
+  'Costa Grande - Sierra',
+  'Durango / Zacatecas',
+  'Hidalgo',
+  'Istmo',
+  'Michoacán',
+  'Mixteca',
+  'Morelos',
+  'Nayarit / Jalisco',
+  'Ocosingo',
+  'Palenque',
+  'Papantla',
+  'Pichucalco',
+  'Puebla',
+  'San Luis Potosí',
+  'Sinaloa',
+  'Tamaulipas',
+  'Tantoyuca',
+  'Tapachula',
+  'Teapa',
+  'Tlaxcala / Estado de México',
+  'Tzucacab / Opb',
+  'Xpujil',
+]
+
+function toUpperNoTilde(val: string): string {
+  return val
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+}
+
 const form = reactive({
   name: '',
   email: '',
   password: '',
   confirmPassword: '',
+  curp: '',
   tipo_capturista: '',
   estado: '',
   municipio: 0,
@@ -330,6 +383,7 @@ const errors = reactive<Record<string, string>>({
   email: '',
   password: '',
   confirmPassword: '',
+  curp: '',
   tipo_capturista: '',
   estado: '',
   municipio: '',
@@ -415,6 +469,8 @@ function validateStep2(): boolean {
   if (!form.tipo_capturista) { errors.tipo_capturista = 'Selecciona un tipo'; valid = false }
   if (!form.name.trim()) { errors.name = 'El nombre es obligatorio'; valid = false }
   else if (form.name.trim().length < 2) { errors.name = 'Mínimo 2 caracteres'; valid = false }
+  if (!form.curp.trim()) { errors.curp = 'La CURP es obligatoria'; valid = false }
+  else if (form.curp.trim().length !== 18) { errors.curp = 'La CURP debe tener 18 caracteres'; valid = false }
   if (!form.estado) { errors.estado = 'Selecciona un estado'; valid = false }
   if (!form.municipio) { errors.municipio = 'Selecciona un municipio'; valid = false }
   return valid

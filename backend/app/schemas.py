@@ -7,6 +7,7 @@ class RegisterRequest(BaseModel):
     name: str
     email: EmailStr
     password: str
+    curp: str
     tipo_capturista: str
     estado: str
     municipio: int
@@ -35,6 +36,7 @@ class UserPublic(BaseModel):
     email: str
     avatar: Optional[str] = None
     createdAt: str
+    curp: Optional[str] = None
     tipo_capturista: Optional[str] = None
     estado: Optional[str] = None
     municipio: Optional[int] = None

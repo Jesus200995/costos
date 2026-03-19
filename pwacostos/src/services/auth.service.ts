@@ -12,6 +12,7 @@ export const authService = {
       name: payload.name,
       email: payload.email,
       password: payload.password,
+      curp: payload.curp,
       tipo_capturista: payload.tipo_capturista,
       estado: payload.estado,
       municipio: payload.municipio,
