@@ -82,3 +82,79 @@ class MunicipioOut(BaseModel):
     nomgeo: str
     cve_ent: str
     territorio: Optional[str] = None
+
+
+# ── Mercados / Precios ──
+
+class CategoriaOut(BaseModel):
+    id: str
+    nombre: str
+    descripcion: Optional[str] = None
+
+
+class SubcategoriaOut(BaseModel):
+    id: str
+    categoria_id: str
+    nombre: str
+
+
+class ProductoOut(BaseModel):
+    id: int
+    subcategoria_id: str
+    nombre: str
+
+
+class UnidadOut(BaseModel):
+    id: int
+    subcategoria_id: str
+    nombre: str
+
+
+class MercadoCreate(BaseModel):
+    nombre: str
+
+
+class MercadoOut(BaseModel):
+    id: int
+    nombre: str
+    created_at: str
+
+
+class DetalleItem(BaseModel):
+    producto_id: int
+    precio: float
+    unidad: str
+
+
+class ReporteCreate(BaseModel):
+    mercado_id: int
+    tipo_precio: str
+    items: List[DetalleItem]
+
+
+class ReporteOut(BaseModel):
+    id: int
+    mercado_id: int
+    tipo_precio: str
+    fecha: str
+    created_at: str
+    total_productos: int
+
+
+class DetalleItemOut(BaseModel):
+    id: int
+    producto_id: int
+    producto_nombre: str
+    precio: float
+    unidad: str
+    subcategoria_id: str
+
+
+class ReporteDetalleOut(BaseModel):
+    id: int
+    mercado_id: int
+    mercado_nombre: str
+    tipo_precio: str
+    fecha: str
+    created_at: str
+    items: List[DetalleItemOut]

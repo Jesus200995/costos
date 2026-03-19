@@ -31,35 +31,13 @@
           <UserCircle :size="20" />
           <span>Mi Perfil</span>
         </router-link>
-        <button class="sidebar__link" @click="handleNav('lugares')">
-          <MapPin :size="20" />
-          <span>Lugares</span>
-          <span class="sidebar__badge">Pronto</span>
-        </button>
-        <button class="sidebar__link" @click="handleNav('costos')">
-          <Receipt :size="20" />
-          <span>Costos</span>
-          <span class="sidebar__badge">Pronto</span>
-        </button>
-        <button class="sidebar__link" @click="handleNav('reportes')">
-          <BarChart3 :size="20" />
-          <span>Reportes</span>
-          <span class="sidebar__badge">Pronto</span>
-        </button>
+        <router-link to="/mercados" class="sidebar__link" @click="ui.closeSidebar()">
+          <ShoppingBag :size="20" />
+          <span>Mercados</span>
+        </router-link>
       </nav>
 
       <div class="sidebar__divider"></div>
-
-      <nav class="sidebar__nav">
-        <button class="sidebar__link" @click="handleNav('config')">
-          <Settings :size="20" />
-          <span>Configuración</span>
-        </button>
-        <button class="sidebar__link" @click="handleNav('ayuda')">
-          <HelpCircle :size="20" />
-          <span>Ayuda</span>
-        </button>
-      </nav>
 
       <div class="sidebar__footer">
         <button class="sidebar__link sidebar__link--danger" @click="handleLogout">
@@ -78,8 +56,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import {
-  X, Home, MapPin, Receipt, BarChart3,
-  Settings, HelpCircle, LogOut, UserCircle
+  X, Home, ShoppingBag, LogOut, UserCircle
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -90,11 +67,6 @@ const initials = computed(() => {
   const name = authStore.user?.name || 'U'
   return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
 })
-
-function handleNav(section: string) {
-  ui.closeSidebar()
-  ui.showToast(`Próximamente: ${section}`, 'info')
-}
 
 function handleLogout() {
   ui.closeSidebar()

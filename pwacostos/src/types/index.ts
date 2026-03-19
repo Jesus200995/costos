@@ -72,3 +72,78 @@ export interface Municipio {
   cve_ent: string
   territorio?: string | null
 }
+
+// ── Mercados / Precios ──
+
+export interface Categoria {
+  id: string
+  nombre: string
+  descripcion?: string
+}
+
+export interface Subcategoria {
+  id: string
+  categoria_id: string
+  nombre: string
+}
+
+export interface Producto {
+  id: number
+  subcategoria_id: string
+  nombre: string
+}
+
+export interface Unidad {
+  id: number
+  subcategoria_id: string
+  nombre: string
+}
+
+export interface Mercado {
+  id: number
+  nombre: string
+  created_at: string
+}
+
+export interface DetalleItem {
+  producto_id: number
+  precio: number
+  unidad: string
+}
+
+export interface ReporteOut {
+  id: number
+  mercado_id: number
+  tipo_precio: string
+  fecha: string
+  created_at: string
+  total_productos: number
+}
+
+export interface DetalleItemOut {
+  id: number
+  producto_id: number
+  producto_nombre: string
+  precio: number
+  unidad: string
+  subcategoria_id: string
+}
+
+export interface ReporteDetalleOut {
+  id: number
+  mercado_id: number
+  mercado_nombre: string
+  tipo_precio: string
+  fecha: string
+  created_at: string
+  items: DetalleItemOut[]
+}
+
+export interface CapturaItem {
+  producto_id: number
+  producto_nombre: string
+  subcategoria_id: string
+  precio: number | null
+  unidad: string
+  unidades_disponibles: string[]
+}
