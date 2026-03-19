@@ -3,11 +3,11 @@ module.exports = {
     {
       name: 'costos-backend',
       cwd: '/var/www/costos/backend',
-      script: './node_modules/.bin/tsx',
-      args: 'src/index.ts',
+      script: 'venv/bin/uvicorn',
+      args: 'app.main:app --host 0.0.0.0 --port 3001',
       exec_mode: 'fork',
+      interpreter: 'none',
       env: {
-        NODE_ENV: 'production',
         PORT: 3001
       },
       instances: 1,

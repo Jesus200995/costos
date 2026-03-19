@@ -14,22 +14,20 @@ echo "📅 $(date)"
 
 cd "$APP_DIR"
 
-# Instalar dependencias del backend
+# Instalar dependencias del backend (FastAPI)
 echo "📦 Instalando dependencias del backend..."
 cd "$APP_DIR/backend"
-npm ci --production 2>/dev/null || npm install --production
-npm rebuild better-sqlite3
+python3 -m venv venv 2>/dev/null || true
+source venv/bin/activate
+pip install -r requirements.txt --quiet
 
 # Copiar .env si no existe
 if [ ! -f .env ]; then
     echo 'PORT=3001' > .env
     echo 'JWT_SECRET=costos_prod_secret_change_me' >> .env
-    echo 'DB_PATH=./data/costos.db' >> .env
+    echo 'DATABASE_URL=postgresql://jesus:2025@localhost:5432/costos' >> .env
     echo "⚠️  Archivo .env creado - Revisa la configuración"
 fi
-
-# Crear directorio de data
-mkdir -p data
 
 # Instalar dependencias y construir frontend
 echo "📦 Instalando dependencias del frontend..."
@@ -41,9 +39,8 @@ npx vite build
 
 # Reiniciar backend con PM2
 echo "🔄 Reiniciando backend..."
-cd "$APP_DIR/backend"
-pm2 delete costos-backend 2>/dev/null || true
-pm2 start node_modules/.bin/tsx --name costos-backend -- src/index.ts
+cd "$APP_DIR"
+pm2 startOrRestart deploy/ecosystem.config.cjs --update-env
 pm2 save
 
 echo "✅ Despliegue completado exitosamente!"

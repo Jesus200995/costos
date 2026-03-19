@@ -146,7 +146,7 @@ async function handleLogin() {
     router.push('/')
   } catch (err: unknown) {
     const error = err as { response?: { data?: { message?: string } } }
-    serverError.value = error.response?.data?.message || 'Error al iniciar sesión'
+    serverError.value = error.response?.data?.detail || error.response?.data?.message || 'Error al iniciar sesión'
   }
 }
 </script>
