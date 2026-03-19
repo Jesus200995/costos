@@ -1,8 +1,8 @@
-name: Deploy to VPS
+name: Deploy COSTOS
 
 on:
   push:
-    branches: [main]
+    branches: [master]
 
 jobs:
   deploy:
@@ -16,8 +16,5 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
             cd /var/www/costos
-            git pull origin main
-            cd backend && npm install --production
-            cd ../pwacostos && npm install && npm run build
-            pm2 restart costos-backend || pm2 start /var/www/costos/ecosystem.config.cjs
-            pm2 save
+            git pull origin master
+            bash deploy/deploy.sh
