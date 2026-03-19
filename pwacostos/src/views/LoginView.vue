@@ -145,7 +145,7 @@ async function handleLogin() {
     ui.showToast('¡Bienvenido de vuelta!', 'success')
     router.push('/')
   } catch (err: unknown) {
-    const error = err as { response?: { data?: { message?: string } } }
+    const error = err as { response?: { data?: { detail?: string; message?: string } } }
     serverError.value = error.response?.data?.detail || error.response?.data?.message || 'Error al iniciar sesión'
   }
 }

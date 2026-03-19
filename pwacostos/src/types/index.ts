@@ -4,6 +4,18 @@ export interface User {
   email: string
   avatar?: string
   createdAt: string
+  tipo_capturista?: string
+  estado?: string
+  municipio?: number
+  localidad?: string
+  telefono?: string
+  consent?: boolean
+  cac_id?: string
+  cac_nombre?: string
+  territorio?: string
+  rol_comision?: string
+  correo_institucional?: string
+  rol_interno?: string
 }
 
 export interface LoginPayload {
@@ -16,6 +28,18 @@ export interface RegisterPayload {
   email: string
   password: string
   confirmPassword: string
+  tipo_capturista: string
+  estado: string
+  municipio: number
+  localidad?: string
+  telefono?: string
+  consent: boolean
+  cac_id?: string
+  cac_nombre?: string
+  territorio?: string
+  rol_comision?: string
+  correo_institucional?: string
+  rol_interno?: string
 }
 
 export interface AuthResponse {
@@ -33,4 +57,15 @@ export interface Toast {
   message: string
   type: 'success' | 'error' | 'warning' | 'info'
   duration?: number
+}
+
+export interface Estado {
+  cve_ent: string
+  nom_ent: string
+}
+
+export interface Municipio {
+  clave_mun: number
+  nomgeo: string
+  cve_ent: string
 }

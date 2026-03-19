@@ -12,6 +12,10 @@ def register(data: RegisterRequest):
         raise HTTPException(400, "El nombre debe tener al menos 2 caracteres")
     if len(data.password) < 6:
         raise HTTPException(400, "La contraseña debe tener al menos 6 caracteres")
+    if not data.consent:
+        raise HTTPException(400, "Debes aceptar el aviso de privacidad")
+    if data.tipo_capturista not in ("REPRESENTANTE_CAC", "COM_COMERCIALIZACION", "OFICINAS"):
+        raise HTTPException(400, "Tipo de capturista inválido")
 
     with get_db() as conn:
         cur = conn.cursor()
@@ -22,10 +26,30 @@ def register(data: RegisterRequest):
 
         hashed = hash_password(data.password)
         cur.execute(
-            """INSERT INTO users (name, email, password)
-               VALUES (%s, %s, %s)
-               RETURNING id, name, email, avatar, created_at""",
-            (data.name.strip(), data.email.lower().strip(), hashed),
+            """INSERT INTO users (name, email, password, tipo_capturista, estado, municipio,
+               localidad, telefono, consent, cac_id, cac_nombre, territorio,
+               rol_comision, correo_institucional, rol_interno)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+               RETURNING id, name, email, avatar, created_at, tipo_capturista, estado,
+               municipio, localidad, telefono, consent, cac_id, cac_nombre, territorio,
+               rol_comision, correo_institucional, rol_interno""",
+            (
+                data.name.strip(),
+                data.email.lower().strip(),
+                hashed,
+                data.tipo_capturista,
+                data.estado,
+                data.municipio,
+                data.localidad or None,
+                data.telefono or None,
+                data.consent,
+                data.cac_id or None,
+                data.cac_nombre or None,
+                data.territorio or None,
+                data.rol_comision or None,
+                data.correo_institucional or None,
+                data.rol_interno or None,
+            ),
         )
         row = cur.fetchone()
 
@@ -35,6 +59,18 @@ def register(data: RegisterRequest):
         email=row["email"],
         avatar=row["avatar"],
         createdAt=row["created_at"].isoformat(),
+        tipo_capturista=row["tipo_capturista"],
+        estado=row["estado"],
+        municipio=row["municipio"],
+        localidad=row["localidad"],
+        telefono=row["telefono"],
+        consent=row["consent"] or False,
+        cac_id=row["cac_id"],
+        cac_nombre=row["cac_nombre"],
+        territorio=row["territorio"],
+        rol_comision=row["rol_comision"],
+        correo_institucional=row["correo_institucional"],
+        rol_interno=row["rol_interno"],
     )
     token = create_token(user.id)
     return AuthResponse(user=user, token=token)
@@ -45,7 +81,10 @@ def login(data: LoginRequest):
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute(
-            "SELECT id, name, email, password, avatar, created_at FROM users WHERE email = %s",
+            """SELECT id, name, email, password, avatar, created_at, tipo_capturista,
+               estado, municipio, localidad, telefono, consent, cac_id, cac_nombre,
+               territorio, rol_comision, correo_institucional, rol_interno
+               FROM users WHERE email = %s""",
             (data.email.lower().strip(),),
         )
         row = cur.fetchone()
@@ -59,6 +98,18 @@ def login(data: LoginRequest):
         email=row["email"],
         avatar=row["avatar"],
         createdAt=row["created_at"].isoformat(),
+        tipo_capturista=row["tipo_capturista"],
+        estado=row["estado"],
+        municipio=row["municipio"],
+        localidad=row["localidad"],
+        telefono=row["telefono"],
+        consent=row["consent"] or False,
+        cac_id=row["cac_id"],
+        cac_nombre=row["cac_nombre"],
+        territorio=row["territorio"],
+        rol_comision=row["rol_comision"],
+        correo_institucional=row["correo_institucional"],
+        rol_interno=row["rol_interno"],
     )
     token = create_token(user.id)
     return AuthResponse(user=user, token=token)
@@ -69,7 +120,10 @@ def profile(user_id: str = Depends(get_current_user_id)):
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute(
-            "SELECT id, name, email, avatar, created_at FROM users WHERE id = %s::uuid",
+            """SELECT id, name, email, avatar, created_at, tipo_capturista,
+               estado, municipio, localidad, telefono, consent, cac_id, cac_nombre,
+               territorio, rol_comision, correo_institucional, rol_interno
+               FROM users WHERE id = %s::uuid""",
             (user_id,),
         )
         row = cur.fetchone()
@@ -83,4 +137,16 @@ def profile(user_id: str = Depends(get_current_user_id)):
         email=row["email"],
         avatar=row["avatar"],
         createdAt=row["created_at"].isoformat(),
+        tipo_capturista=row["tipo_capturista"],
+        estado=row["estado"],
+        municipio=row["municipio"],
+        localidad=row["localidad"],
+        telefono=row["telefono"],
+        consent=row["consent"] or False,
+        cac_id=row["cac_id"],
+        cac_nombre=row["cac_nombre"],
+        territorio=row["territorio"],
+        rol_comision=row["rol_comision"],
+        correo_institucional=row["correo_institucional"],
+        rol_interno=row["rol_interno"],
     )

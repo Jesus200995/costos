@@ -11,7 +11,19 @@ export const authService = {
     const { data } = await api.post<AuthResponse>('/auth/register', {
       name: payload.name,
       email: payload.email,
-      password: payload.password
+      password: payload.password,
+      tipo_capturista: payload.tipo_capturista,
+      estado: payload.estado,
+      municipio: payload.municipio,
+      localidad: payload.localidad || null,
+      telefono: payload.telefono || null,
+      consent: payload.consent,
+      cac_id: payload.cac_id || null,
+      cac_nombre: payload.cac_nombre || null,
+      territorio: payload.territorio || null,
+      rol_comision: payload.rol_comision || null,
+      correo_institucional: payload.correo_institucional || null,
+      rol_interno: payload.rol_interno || null,
     })
     return data
   },
