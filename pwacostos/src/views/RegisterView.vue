@@ -202,13 +202,20 @@
                 <label class="form-label">Rol dentro de la comisión <span class="form-optional">(opcional)</span></label>
                 <div class="form-input-wrapper">
                   <Users :size="20" class="form-icon" />
-                  <select v-model="form.rol_comision" @focus="focused = 'rol_comision'" @blur="focused = ''">
+                  <select v-model="rolComisionSelect" @focus="focused = 'rol_comision'" @blur="focused = ''">
                     <option value="">Selecciona rol</option>
                     <option value="Coordinación">Coordinación</option>
                     <option value="Integrante">Integrante</option>
                     <option value="Apoyo">Apoyo</option>
                     <option value="Otro">Otro</option>
                   </select>
+                </div>
+              </div>
+              <div v-if="rolComisionSelect === 'Otro'" class="form-group">
+                <label class="form-label">Especifica el rol</label>
+                <div class="form-input-wrapper">
+                  <Pencil :size="20" class="form-icon" />
+                  <input v-model="rolComisionOtro" type="text" placeholder="Escribe el rol" @focus="focused = 'rol_comision_otro'" @blur="focused = ''" />
                 </div>
               </div>
             </template>
@@ -228,7 +235,7 @@
                 <label class="form-label">Rol interno <span class="form-optional">(opcional)</span></label>
                 <div class="form-input-wrapper">
                   <Briefcase :size="20" class="form-icon" />
-                  <select v-model="form.rol_interno" @focus="focused = 'rol_interno'" @blur="focused = ''">
+                  <select v-model="rolInternoSelect" @focus="focused = 'rol_interno'" @blur="focused = ''">
                     <option value="">Selecciona rol</option>
                     <option value="Director General">Director General</option>
                     <option value="Director de Área">Director de Área</option>
@@ -236,7 +243,15 @@
                     <option value="JUD">JUD</option>
                     <option value="Técnico Social">Técnico Social</option>
                     <option value="Técnico Productivo">Técnico Productivo</option>
+                    <option value="Otro">Otro</option>
                   </select>
+                </div>
+              </div>
+              <div v-if="rolInternoSelect === 'Otro'" class="form-group">
+                <label class="form-label">Especifica el rol</label>
+                <div class="form-input-wrapper">
+                  <Pencil :size="20" class="form-icon" />
+                  <input v-model="rolInternoOtro" type="text" placeholder="Escribe el rol" @focus="focused = 'rol_interno_otro'" @blur="focused = ''" />
                 </div>
               </div>
 
@@ -298,7 +313,8 @@ import {
   UserPlus, User, Mail, Lock, ShieldCheck,
   Eye, EyeOff, ArrowLeft, Loader2, AlertCircle,
   ChevronRight, ChevronLeft, Briefcase, MapPin,
-  Phone, Home, Hash, Building, Map as MapIcon, Users, Info
+  Phone, Home, Hash, Building, Map as MapIcon, Users, Info,
+  Pencil
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -317,6 +333,12 @@ const estados = ref<Estado[]>([])
 const municipios = ref<Municipio[]>([])
 const loadingMunicipios = ref(false)
 const territorioFromCatalog = ref(false)
+
+// "Otro" logic
+const rolComisionSelect = ref('')
+const rolComisionOtro = ref('')
+const rolInternoSelect = ref('')
+const rolInternoOtro = ref('')
 
 const territorioOptions = [
   'Acapulco - Centro - Norte - Tierra Caliente',
@@ -514,6 +536,15 @@ function nextStep() {
 async function handleRegister() {
   serverError.value = ''
   if (!validateStep3()) return
+
+  // Compute final rol values
+  form.rol_comision = rolComisionSelect.value === 'Otro'
+    ? rolComisionOtro.value.trim()
+    : rolComisionSelect.value
+  form.rol_interno = rolInternoSelect.value === 'Otro'
+    ? rolInternoOtro.value.trim()
+    : rolInternoSelect.value
+
   try {
     await authStore.register(form)
     ui.showToast('¡Cuenta creada exitosamente!', 'success')

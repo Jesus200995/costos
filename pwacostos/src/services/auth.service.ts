@@ -32,5 +32,10 @@ export const authService = {
   async getProfile(): Promise<AuthResponse['user']> {
     const { data } = await api.get<AuthResponse['user']>('/auth/profile')
     return data
+  },
+
+  async updateProfile(payload: Record<string, unknown>): Promise<AuthResponse['user']> {
+    const { data } = await api.put<AuthResponse['user']>('/auth/profile', payload)
+    return data
   }
 }

@@ -25,6 +25,22 @@ class RegisterRequest(BaseModel):
     rol_interno: Optional[str] = None
 
 
+class UpdateProfileRequest(BaseModel):
+    name: str
+    curp: str
+    tipo_capturista: str
+    estado: str
+    municipio: int
+    localidad: Optional[str] = None
+    telefono: Optional[str] = None
+    cac_id: Optional[str] = None
+    cac_nombre: Optional[str] = None
+    territorio: Optional[str] = None
+    rol_comision: Optional[str] = None
+    correo_institucional: Optional[str] = None
+    rol_interno: Optional[str] = None
+
+
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str

@@ -122,6 +122,10 @@
         </div>
       </template>
       <template #footer>
+        <button class="btn btn--primary btn--full" style="margin-bottom: 0.5rem" @click="showProfileModal = false; router.push('/perfil')">
+          <UserCircle :size="18" />
+          <span>Ver perfil completo</span>
+        </button>
         <button class="btn btn--danger btn--full" @click="handleLogout">
           <LogOut :size="18" />
           <span>Cerrar Sesión</span>

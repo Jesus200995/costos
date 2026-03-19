@@ -27,6 +27,10 @@
           <Home :size="20" />
           <span>Inicio</span>
         </router-link>
+        <router-link to="/perfil" class="sidebar__link" @click="ui.closeSidebar()">
+          <UserCircle :size="20" />
+          <span>Mi Perfil</span>
+        </router-link>
         <button class="sidebar__link" @click="handleNav('lugares')">
           <MapPin :size="20" />
           <span>Lugares</span>
@@ -75,7 +79,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import {
   X, Home, MapPin, Receipt, BarChart3,
-  Settings, HelpCircle, LogOut
+  Settings, HelpCircle, LogOut, UserCircle
 } from 'lucide-vue-next'
 
 const router = useRouter()
