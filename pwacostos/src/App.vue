@@ -21,7 +21,7 @@ const showUpdateToast = ref(false)
 
 const { needRefresh, updateServiceWorker } = useRegisterSW({
   immediate: true,
-  onRegisteredSW(_url, registration) {
+  onRegisteredSW(_url: string, registration: ServiceWorkerRegistration | undefined) {
     if (registration) {
       setInterval(() => { registration.update() }, 60 * 1000)
     }
