@@ -145,6 +145,11 @@
               <Plus :size="20" />
             </button>
           </div>
+          <!-- Tip: múltiples productos -->
+          <div class="multi-product-tip">
+            <Info :size="14" />
+            <span>Puedes agregar varios productos antes de guardar el reporte</span>
+          </div>
         </div>
 
         <!-- Tabla de captura -->
@@ -226,17 +231,21 @@
             v-for="r in reportes"
             :key="r.id"
             class="reporte-card"
-            @click="toggleReporteDetalle(r.id)"
           >
-            <div class="reporte-card__info">
-              <span class="reporte-card__tipo" :class="r.tipo_precio === 'MENUDEO' ? 'badge--blue' : 'badge--orange'">
-                {{ r.tipo_precio }}
-              </span>
-              <span class="reporte-card__fecha">{{ r.fecha }}</span>
-              <span class="reporte-card__count">{{ r.total_productos }} productos</span>
+            <div class="reporte-card__main" @click="toggleReporteDetalle(r.id)">
+              <div class="reporte-card__left">
+                <span class="reporte-card__tipo" :class="r.tipo_precio === 'MENUDEO' ? 'badge--blue' : 'badge--orange'">
+                  {{ r.tipo_precio }}
+                </span>
+                <div class="reporte-card__meta">
+                  <span class="reporte-card__fecha">{{ r.fecha }}</span>
+                  <span class="reporte-card__count">{{ r.total_productos }} productos</span>
+                </div>
+              </div>
+              <button class="reporte-card__toggle" :class="{ 'toggle--open': expandedReporte === r.id }">
+                <ChevronDown :size="20" />
+              </button>
             </div>
-            <ChevronDown v-if="expandedReporte !== r.id" :size="18" />
-            <ChevronUp v-else :size="18" />
             <!-- Detalle expandido -->
             <div v-if="expandedReporte === r.id && reporteDetalle" class="reporte-detalle">
               <div v-for="d in reporteDetalle.items" :key="d.id" class="detalle-row">
@@ -265,7 +274,7 @@ import AppToast from '@/components/AppToast.vue'
 import {
   Store, Plus, Trash2, ChevronRight, ArrowLeft,
   Wheat, Beef, ClipboardList, X, Save, FileText,
-  ChevronDown, ChevronUp
+  ChevronDown, Info
 } from 'lucide-vue-next'
 
 const ui = useUiStore()
@@ -822,6 +831,27 @@ onMounted(() => {
   gap: 0.5rem;
 }
 
+/* Tip múltiples productos */
+.multi-product-tip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+  padding: 0.5rem 0.75rem;
+  background: #fff8e1;
+  border-radius: 8px;
+  border-left: 3px solid #ffc107;
+}
+.multi-product-tip svg {
+  color: #f9a825;
+  flex-shrink: 0;
+}
+.multi-product-tip span {
+  font-size: 0.8rem;
+  color: #5d4037;
+  line-height: 1.3;
+}
+
 /* ── Capture Table ── */
 .captura-table-section {
   margin-bottom: 1.25rem;
@@ -957,24 +987,38 @@ onMounted(() => {
   background: #fff;
   border: 1.5px solid #e8f5e9;
   border-radius: 12px;
-  padding: 0.75rem;
-  margin-bottom: 0.5rem;
-  cursor: pointer;
+  margin-bottom: 0.65rem;
+  overflow: hidden;
   transition: all 0.2s;
 }
 .reporte-card:hover {
   border-color: #1B5E20;
 }
-.reporte-card__info {
+
+.reporte-card__main {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
 }
+
+.reporte-card__left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.reporte-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
 .reporte-card__tipo {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  padding: 0.15rem 0.5rem;
+  padding: 0.2rem 0.6rem;
   border-radius: 6px;
   text-transform: uppercase;
 }
@@ -987,27 +1031,50 @@ onMounted(() => {
   color: #e65100;
 }
 .reporte-card__fecha {
-  font-size: 0.85rem;
-  color: #666;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
 }
 .reporte-card__count {
   font-size: 0.8rem;
-  color: #999;
-  margin-left: auto;
+  color: #888;
+}
+
+.reporte-card__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: #f5f5f5;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.reporte-card__toggle:hover {
+  background: #e8f5e9;
+  color: #1B5E20;
+}
+.reporte-card__toggle.toggle--open {
+  background: #1B5E20;
+  color: #fff;
+  transform: rotate(180deg);
 }
 
 .reporte-detalle {
-  margin-top: 0.75rem;
-  padding-top: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #fafafa;
   border-top: 1px solid #e8f5e9;
 }
 .detalle-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.35rem 0;
+  padding: 0.45rem 0;
   font-size: 0.85rem;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid #eee;
 }
 .detalle-row:last-child {
   border-bottom: none;
