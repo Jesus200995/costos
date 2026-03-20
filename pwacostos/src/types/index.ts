@@ -143,6 +143,7 @@ export interface CapturaItem {
   producto_id: number
   producto_nombre: string
   subcategoria_id: string
+  categoria_id: string
   precio: number | null
   unidad: string
   unidades_disponibles: string[]

@@ -95,6 +95,7 @@
         <!-- Categoría -->
         <div class="filter-section">
           <label class="filter-label">Categoría</label>
+          <p v-if="!selectedCategoria" class="step-hint">1. Selecciona una categoría para comenzar</p>
           <div class="category-tabs">
             <button
               v-for="cat in categorias"
@@ -113,6 +114,7 @@
         <!-- Subcategoría -->
         <div v-if="selectedCategoria" class="filter-section">
           <label class="filter-label">Subcategoría</label>
+          <p v-if="!selectedSubcategoria" class="step-hint">2. Selecciona una subcategoría</p>
           <select v-model="selectedSubcategoria" class="input" @change="onSubcategoriaChange">
             <option value="">Selecciona subcategoría...</option>
             <option v-for="sub in subcategorias" :key="sub.id" :value="sub.id">
@@ -124,6 +126,7 @@
         <!-- Agregar producto -->
         <div v-if="selectedSubcategoria" class="add-product-section">
           <label class="filter-label">Agregar producto</label>
+          <p v-if="!selectedProductoId" class="step-hint">3. Selecciona un producto y presiona <strong>+</strong> para agregarlo</p>
           <div class="add-product-row">
             <select v-model="selectedProductoId" class="input input--grow">
               <option value="">Buscar producto...</option>
@@ -155,38 +158,45 @@
 
           <div class="captura-cards">
             <div v-for="(item, idx) in capturaItems" :key="idx" class="captura-card">
-              <div class="captura-card__header">
-                <span class="captura-card__name">{{ item.producto_nombre }}</span>
-                <button class="btn-icon btn-icon--danger btn-icon--sm" @click="removeProduct(idx)" title="Quitar">
-                  <X :size="16" />
-                </button>
+              <!-- Icono de categoría -->
+              <div class="captura-card__cat-icon" :class="item.categoria_id === 'AGRICOLA' ? 'cat-icon--agricola' : 'cat-icon--pecuario'">
+                <Wheat v-if="item.categoria_id === 'AGRICOLA'" :size="12" />
+                <Beef v-else :size="12" />
               </div>
-              <div class="captura-card__fields">
-                <div class="captura-field">
-                  <label>Precio (MXN)</label>
-                  <input
-                    type="number"
-                    v-model.number="item.precio"
-                    class="input input--price"
-                    placeholder="0.00"
-                    min="0.01"
-                    step="0.01"
-                    @blur="validatePrice(item)"
-                  />
+              <div class="captura-card__content">
+                <div class="captura-card__header">
+                  <span class="captura-card__name">{{ item.producto_nombre }}</span>
+                  <button class="captura-card__delete" @click="removeProduct(idx)" title="Quitar">
+                    <X :size="14" />
+                  </button>
                 </div>
-                <div class="captura-field">
-                  <label>Unidad</label>
-                  <select v-model="item.unidad" class="input">
-                    <option value="">Seleccionar...</option>
-                    <option v-for="u in item.unidades_disponibles" :key="u" :value="u">
-                      {{ u }}
-                    </option>
-                  </select>
+                <div class="captura-card__fields">
+                  <div class="captura-field">
+                    <label>Precio (MXN)</label>
+                    <input
+                      type="number"
+                      v-model.number="item.precio"
+                      class="input input--price"
+                      placeholder="0.00"
+                      min="0.01"
+                      step="0.01"
+                      @blur="validatePrice(item)"
+                    />
+                  </div>
+                  <div class="captura-field">
+                    <label>Unidad</label>
+                    <select v-model="item.unidad" class="input">
+                      <option value="">Seleccionar...</option>
+                      <option v-for="u in item.unidades_disponibles" :key="u" :value="u">
+                        {{ u }}
+                      </option>
+                    </select>
+                  </div>
                 </div>
+                <p v-if="item.precio !== null && item.precio <= 0" class="field-error">
+                  El precio debe ser mayor a 0
+                </p>
               </div>
-              <p v-if="item.precio !== null && item.precio <= 0" class="field-error">
-                El precio debe ser mayor a 0
-              </p>
             </div>
           </div>
         </div>
@@ -426,6 +436,7 @@ function addProduct() {
     producto_id: prod.id,
     producto_nombre: prod.nombre,
     subcategoria_id: prod.subcategoria_id,
+    categoria_id: selectedCategoria.value,
     precio: null,
     unidad: unitNames.length === 1 ? unitNames[0] : '',
     unidades_disponibles: unitNames
@@ -760,6 +771,19 @@ onMounted(() => {
   margin-bottom: 0.35rem;
 }
 
+/* Hints de paso */
+.step-hint {
+  font-size: 0.8rem;
+  color: #999;
+  font-style: italic;
+  margin: 0 0 0.5rem;
+  padding-left: 0.25rem;
+}
+.step-hint strong {
+  color: #1B5E20;
+  font-style: normal;
+}
+
 .category-tabs {
   display: flex;
   gap: 0.5rem;
@@ -818,14 +842,41 @@ onMounted(() => {
 .captura-cards {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .captura-card {
+  position: relative;
   background: #fff;
   border: 1.5px solid #e8f5e9;
-  border-radius: 12px;
-  padding: 0.75rem;
+  border-radius: 14px;
+  padding: 0.85rem 0.85rem 0.85rem 2.5rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+/* Icono de categoría */
+.captura-card__cat-icon {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cat-icon--agricola {
+  background: #e8f5e9;
+  color: #1B5E20;
+}
+.cat-icon--pecuario {
+  background: #fce4ec;
+  color: #d81b60;
+}
+
+.captura-card__content {
+  width: 100%;
 }
 .captura-card__header {
   display: flex;
@@ -837,6 +888,22 @@ onMounted(() => {
   font-weight: 600;
   font-size: 0.95rem;
   color: #1B5E20;
+}
+.captura-card__delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: #ffebee;
+  color: #c62828;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.captura-card__delete:hover {
+  background: #ffcdd2;
 }
 .captura-card__fields {
   display: flex;
