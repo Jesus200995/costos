@@ -182,6 +182,10 @@
           </h3>
           <div class="historial-scroll">
             <div v-for="h in historial" :key="h.id" class="historial-row">
+              <div class="historial-row__cat-icon" :class="h.categoria_id === 'AGRICOLA' ? 'cat-icon--agricola' : 'cat-icon--pecuario'">
+                <Wheat v-if="h.categoria_id === 'AGRICOLA'" :size="12" />
+                <Beef v-else :size="12" />
+              </div>
               <div class="historial-row__left">
                 <span class="historial-row__name">{{ h.producto_nombre }}</span>
                 <span class="historial-row__sub">{{ h.subcategoria_nombre }}</span>
@@ -820,6 +824,15 @@ onMounted(() => {
 }
 .historial-row:last-child {
   border-bottom: none;
+}
+.historial-row__cat-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 .historial-row__left {
   display: flex;

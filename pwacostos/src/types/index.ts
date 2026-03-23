@@ -154,6 +154,7 @@ export interface PrecioHistorialItem {
   producto_id: number
   producto_nombre: string
   subcategoria_nombre: string
+  categoria_id: string
   precio: number
   unidad: string
   tipo_precio: string

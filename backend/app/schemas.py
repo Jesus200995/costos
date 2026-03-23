@@ -175,6 +175,7 @@ class PrecioHistorialItem(BaseModel):
     producto_id: int
     producto_nombre: str
     subcategoria_nombre: str
+    categoria_id: str
     precio: float
     unidad: str
     tipo_precio: str

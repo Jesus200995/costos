@@ -296,7 +296,7 @@ def create_precio_individual(data: PrecioIndividualCreate, user_id: str = Depend
 
         # Obtener nombre de subcategoría
         cur.execute(
-            "SELECT nombre FROM subcategorias WHERE id = %s",
+            "SELECT nombre, categoria_id FROM subcategorias WHERE id = %s",
             (prod["subcategoria_id"],),
         )
         sub = cur.fetchone()
@@ -306,6 +306,7 @@ def create_precio_individual(data: PrecioIndividualCreate, user_id: str = Depend
         producto_id=data.producto_id,
         producto_nombre=prod["nombre"],
         subcategoria_nombre=sub["nombre"] if sub else "",
+        categoria_id=sub["categoria_id"] if sub else "",
         precio=data.precio,
         unidad=data.unidad,
         tipo_precio=data.tipo_precio,
@@ -320,7 +321,7 @@ def list_precios_historial(mercado_id: int = Query(...), user_id: str = Depends(
         cur = conn.cursor()
         cur.execute(
             """SELECT d.id, d.producto_id, p.nombre as producto_nombre,
-                   s.nombre as subcategoria_nombre,
+                   s.nombre as subcategoria_nombre, s.categoria_id,
                    d.precio, d.unidad, r.tipo_precio, r.fecha, r.created_at
                FROM detalle_precios d
                JOIN reportes_precios r ON r.id = d.reporte_id
@@ -337,6 +338,7 @@ def list_precios_historial(mercado_id: int = Query(...), user_id: str = Depends(
             producto_id=r["producto_id"],
             producto_nombre=r["producto_nombre"],
             subcategoria_nombre=r["subcategoria_nombre"],
+            categoria_id=r["categoria_id"],
             precio=float(r["precio"]),
             unidad=r["unidad"],
             tipo_precio=r["tipo_precio"],
