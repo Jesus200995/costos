@@ -35,8 +35,17 @@ const router = createRouter({
   ]
 })
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const auth = useAuthStore()
+
+  // Si hay token pero no user, restaurar sesión
+  if (auth.token && !auth.user) {
+    try {
+      await auth.init()
+    } catch {
+      // init ya llama logout internamente
+    }
+  }
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return next('/login')

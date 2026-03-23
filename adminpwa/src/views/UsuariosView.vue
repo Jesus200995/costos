@@ -3,18 +3,19 @@
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <Shield :size="28" />
-        <span>Admin COSTOS</span>
+        <Shield :size="22" />
+        <span>COSTOS</span>
       </div>
 
       <nav class="sidebar-nav">
+        <div class="sidebar-nav-label">Menú</div>
         <router-link to="/" class="nav-item" :class="{ active: $route.path === '/' }">
-          <LayoutDashboard :size="20" />
+          <LayoutDashboard :size="18" />
           <span>Dashboard</span>
         </router-link>
 
         <router-link to="/usuarios" class="nav-item" :class="{ active: $route.path === '/usuarios' }">
-          <Users :size="20" />
+          <Users :size="18" />
           <span>Usuarios</span>
         </router-link>
       </nav>
@@ -279,60 +280,75 @@ onMounted(() => {
   min-height: 100vh;
 }
 
-/* ── Sidebar (same as Dashboard) ── */
+/* ── Sidebar (Apple-style) ── */
 .sidebar {
   width: 260px;
-  background: #fff;
-  border-right: 1px solid #e0e0e0;
+  background: rgba(245, 245, 247, 0.92);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
   position: fixed;
   height: 100vh;
   z-index: 100;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
 }
 
 .sidebar-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e0e0e0;
-  color: #1B5E20;
+  gap: 0.65rem;
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  color: #1d1d1f;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
 }
 
 .sidebar-nav {
   flex: 1;
-  padding: 1rem 0.75rem;
+  padding: 0.75rem 0.65rem;
+}
+
+.sidebar-nav-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #86868b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 0.85rem 0.35rem;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.85rem 1rem;
-  border-radius: 10px;
-  color: #616161;
+  gap: 0.65rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 8px;
+  color: #3a3a3c;
   text-decoration: none;
   font-weight: 500;
-  transition: all 0.2s;
-  margin-bottom: 0.35rem;
+  font-size: 0.88rem;
+  transition: all 0.15s ease;
+  margin-bottom: 2px;
+  letter-spacing: -0.01em;
 }
 
 .nav-item:hover {
-  background: #f5f5f5;
-  color: #1B5E20;
+  background: rgba(0, 0, 0, 0.04);
+  color: #1d1d1f;
 }
 
 .nav-item.active {
-  background: #e8f5e9;
-  color: #1B5E20;
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
 }
 
 .sidebar-footer {
-  padding: 1rem;
-  border-top: 1px solid #e0e0e0;
+  padding: 0.85rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -341,20 +357,21 @@ onMounted(() => {
 .user-info {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .user-avatar {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #1B5E20, #2E7D32);
-  border-radius: 10px;
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, #007aff, #5856d6);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-weight: 700;
-  font-size: 0.9rem;
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
 }
 
 .user-details {
@@ -364,13 +381,14 @@ onMounted(() => {
 
 .user-name {
   font-weight: 600;
-  font-size: 0.9rem;
-  color: #333;
+  font-size: 0.82rem;
+  color: #1d1d1f;
+  letter-spacing: -0.01em;
 }
 
 .user-role {
-  font-size: 0.75rem;
-  color: #888;
+  font-size: 0.7rem;
+  color: #86868b;
   text-transform: capitalize;
 }
 
@@ -378,18 +396,19 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border: none;
   border-radius: 8px;
-  background: #ffebee;
-  color: #c62828;
+  background: transparent;
+  color: #86868b;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
 }
 
 .btn-logout:hover {
-  background: #ffcdd2;
+  background: rgba(255, 59, 48, 0.1);
+  color: #ff3b30;
 }
 
 /* ── Main Content ── */
@@ -695,23 +714,24 @@ onMounted(() => {
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .sidebar {
-    width: 70px;
+    width: 68px;
   }
 
   .sidebar-header span,
   .nav-item span,
-  .user-details {
+  .user-details,
+  .sidebar-nav-label {
     display: none;
   }
 
   .sidebar-header {
     justify-content: center;
-    padding: 1.25rem 0.5rem;
+    padding: 1rem 0.5rem;
   }
 
   .nav-item {
     justify-content: center;
-    padding: 0.85rem 0.5rem;
+    padding: 0.6rem 0.5rem;
   }
 
   .sidebar-footer {
@@ -724,7 +744,7 @@ onMounted(() => {
   }
 
   .main-content {
-    margin-left: 70px;
+    margin-left: 68px;
   }
 
   .hide-mobile {
