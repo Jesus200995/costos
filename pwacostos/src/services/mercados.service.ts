@@ -25,10 +25,10 @@ export const mercadosService = {
     return data
   },
 
-  async getUnidades(subcategoria_id: string): Promise<Unidad[]> {
-    const { data } = await api.get<Unidad[]>('/mercados/unidades', {
-      params: { subcategoria_id }
-    })
+  async getUnidades(subcategoria_id: string, tipo_precio?: string): Promise<Unidad[]> {
+    const params: Record<string, string> = { subcategoria_id }
+    if (tipo_precio) params.tipo_precio = tipo_precio
+    const { data } = await api.get<Unidad[]>('/mercados/unidades', { params })
     return data
   },
 

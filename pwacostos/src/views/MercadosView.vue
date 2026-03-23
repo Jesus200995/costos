@@ -264,7 +264,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { mercadosService } from '@/services/mercados.service'
 import type { Mercado, Categoria, Subcategoria, Producto, Unidad, CapturaItem, ReporteOut, ReporteDetalleOut } from '@/types'
@@ -423,7 +423,7 @@ async function onSubcategoriaChange() {
   try {
     const [prods, units] = await Promise.all([
       mercadosService.getProductos(subId),
-      mercadosService.getUnidades(subId)
+      mercadosService.getUnidades(subId, tipoPrecio.value)
     ])
     productos.value = prods
     unidades.value = units
@@ -431,6 +431,27 @@ async function onSubcategoriaChange() {
     ui.showToast('Error al cargar productos', 'error')
   }
 }
+
+// Recargar unidades al cambiar tipo de precio
+watch(tipoPrecio, async () => {
+  const subId = selectedSubcategoria.value
+  if (!subId) return
+  try {
+    unidades.value = await mercadosService.getUnidades(subId, tipoPrecio.value)
+    // Actualizar unidades disponibles en items existentes
+    const unitNames = unidades.value.map(u => u.nombre)
+    capturaItems.value.forEach(item => {
+      if (item.subcategoria_id === subId) {
+        item.unidades_disponibles = unitNames
+        if (!unitNames.includes(item.unidad)) {
+          item.unidad = unitNames.length === 1 ? unitNames[0] : ''
+        }
+      }
+    })
+  } catch {
+    ui.showToast('Error al cargar unidades', 'error')
+  }
+})
 
 // ── Captura ──
 function addProduct() {

@@ -43,13 +43,19 @@ def list_productos(subcategoria_id: str = Query(...)):
 
 
 @router.get("/unidades", response_model=List[UnidadOut])
-def list_unidades(subcategoria_id: str = Query(...)):
+def list_unidades(subcategoria_id: str = Query(...), tipo_precio: Optional[str] = Query(None)):
     with get_db() as conn:
         cur = conn.cursor()
-        cur.execute(
-            "SELECT id, subcategoria_id, nombre FROM unidades_subcategoria WHERE subcategoria_id = %s ORDER BY nombre",
-            (subcategoria_id,),
-        )
+        if tipo_precio and tipo_precio in ('MENUDEO', 'MAYOREO'):
+            cur.execute(
+                "SELECT id, subcategoria_id, nombre FROM unidades_subcategoria WHERE subcategoria_id = %s AND tipo = %s ORDER BY nombre",
+                (subcategoria_id, tipo_precio),
+            )
+        else:
+            cur.execute(
+                "SELECT DISTINCT ON (subcategoria_id, nombre) id, subcategoria_id, nombre FROM unidades_subcategoria WHERE subcategoria_id = %s ORDER BY subcategoria_id, nombre",
+                (subcategoria_id,),
+            )
         return [dict(r) for r in cur.fetchall()]
 
 
