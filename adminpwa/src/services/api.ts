@@ -1,8 +1,7 @@
 import axios from 'axios'
 
-const API_URL = import.meta.env.PROD 
-  ? 'https://apicostos.sembrandodatos.com/api'
-  : 'http://localhost:8000/api'
+// Siempre usar API de producción (el backend local no está configurado)
+const API_URL = 'https://apicostos.sembrandodatos.com/api'
 
 const api = axios.create({
   baseURL: API_URL,
