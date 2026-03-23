@@ -26,7 +26,12 @@
 
         <router-link to="/usuarios-pwa" class="nav-item" :class="{ active: $route.path === '/usuarios-pwa' }">
           <Users :size="18" />
-          <span>Usuarios PWA</span>
+          <span>Usuarios</span>
+        </router-link>
+
+        <router-link to="/visor" class="nav-item" :class="{ active: $route.path === '/visor' }">
+          <Map :size="18" />
+          <span>Visor</span>
         </router-link>
       </nav>
 
@@ -367,7 +372,7 @@ import {
   Shield, LayoutDashboard, Users, LogOut, Trash2, RefreshCw, AlertTriangle,
   Layers, Search, X, ChevronDown, ChevronLeft, ChevronRight,
   ListFilter, CircleDot, UserCheck, UserX, ShieldCheck,
-  Eye, Pencil, Save, Loader2, CheckCircle
+  Eye, Pencil, Save, Loader2, CheckCircle, Map
 } from 'lucide-vue-next'
 
 const router = useRouter()

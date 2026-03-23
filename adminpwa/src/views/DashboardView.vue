@@ -36,7 +36,12 @@
           :class="{ active: $route.path === '/usuarios-pwa' }"
         >
           <Users :size="18" />
-          <span>Usuarios PWA</span>
+          <span>Usuarios</span>
+        </router-link>
+
+        <router-link to="/visor" class="nav-item" :class="{ active: $route.path === '/visor' }">
+          <Map :size="18" />
+          <span>Visor</span>
         </router-link>
       </nav>
 
@@ -151,7 +156,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import {
   Layers, LayoutDashboard, Users, LogOut, User, CheckCircle,
-  Calendar, UserCircle, Zap
+  Calendar, UserCircle, Zap, Map
 } from 'lucide-vue-next'
 
 const router = useRouter()
