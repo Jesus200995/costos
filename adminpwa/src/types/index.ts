@@ -11,6 +11,25 @@ export interface AdminUser {
   created_at: string
 }
 
+export interface PWAUser {
+  id: string
+  name: string
+  email: string
+  curp: string | null
+  tipo_capturista: string | null
+  estado: string | null
+  municipio: number | null
+  localidad: string | null
+  telefono: string | null
+  cac_id: string | null
+  cac_nombre: string | null
+  territorio: string | null
+  rol_comision: string | null
+  correo_institucional: string | null
+  rol_interno: string | null
+  created_at: string
+}
+
 export interface LoginPayload {
   correo: string
   password: string
@@ -24,6 +43,7 @@ export interface RegisterPayload {
   correo: string
   telefono: string
   password: string
+  rol: 'usuario' | 'administrador'
 }
 
 export interface AuthResponse {

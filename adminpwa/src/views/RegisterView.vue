@@ -110,6 +110,19 @@
           </div>
         </div>
 
+        <!-- Rol -->
+        <div class="form-group">
+          <label class="form-label">Tipo de usuario *</label>
+          <select
+            v-model="form.rol"
+            class="form-input"
+            required
+          >
+            <option value="usuario">Usuario</option>
+            <option value="administrador">Administrador</option>
+          </select>
+        </div>
+
         <!-- Contraseña -->
         <div class="form-group">
           <label class="form-label">Contraseña *</label>
@@ -180,7 +193,8 @@ const form = reactive({
   correo: '',
   telefono: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  rol: 'usuario' as 'usuario' | 'administrador'
 })
 
 const errors = reactive({
@@ -288,7 +302,8 @@ async function handleSubmit() {
       curp: form.curp,
       correo: form.correo,
       telefono: form.telefono,
-      password: form.password
+      password: form.password,
+      rol: form.rol
     })
     router.push('/')
   } catch (e: any) {

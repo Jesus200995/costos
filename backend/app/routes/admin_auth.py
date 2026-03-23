@@ -22,6 +22,7 @@ class AdminRegisterRequest(BaseModel):
     correo: EmailStr
     telefono: str = Field(..., min_length=10, max_length=10)
     password: str = Field(..., min_length=6)
+    rol: Optional[str] = Field('usuario', pattern='^(usuario|administrador)$')
 
     @validator('nombre', 'apellido_paterno', 'apellido_materno', pre=True)
     def normalize_name(cls, v):
@@ -153,9 +154,10 @@ def admin_register(data: AdminRegisterRequest):
             raise HTTPException(409, "Este correo ya está registrado")
 
         hashed = hash_password(data.password)
+        rol = data.rol if data.rol in ('usuario', 'administrador') else 'usuario'
         cur.execute(
             """INSERT INTO usersadmin (nombre, apellido_paterno, apellido_materno, curp, correo, telefono, password_hash, rol, estatus)
-               VALUES (%s, %s, %s, %s, %s, %s, %s, 'usuario', 'activo')
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'activo')
                RETURNING id, nombre, apellido_paterno, apellido_materno, curp, correo, telefono, rol, estatus, created_at""",
             (
                 data.nombre,
@@ -165,6 +167,7 @@ def admin_register(data: AdminRegisterRequest):
                 data.correo.lower(),
                 data.telefono,
                 hashed,
+                rol,
             ),
         )
         row = cur.fetchone()
@@ -377,3 +380,64 @@ def delete_usuario(user_id: int, token: str):
         raise HTTPException(404, "Usuario no encontrado")
 
     return {"message": "Usuario eliminado correctamente"}
+
+
+# ═══════════════════════════════════════════════════════════════════
+# USUARIOS PWA (tabla users)
+# ═══════════════════════════════════════════════════════════════════
+
+class PWAUserOut(BaseModel):
+    id: str
+    name: str
+    email: str
+    curp: Optional[str] = None
+    tipo_capturista: Optional[str] = None
+    estado: Optional[str] = None
+    municipio: Optional[int] = None
+    localidad: Optional[str] = None
+    telefono: Optional[str] = None
+    cac_id: Optional[str] = None
+    cac_nombre: Optional[str] = None
+    territorio: Optional[str] = None
+    rol_comision: Optional[str] = None
+    correo_institucional: Optional[str] = None
+    rol_interno: Optional[str] = None
+    created_at: str
+
+
+@router.get("/usuarios-pwa", response_model=List[PWAUserOut])
+def list_usuarios_pwa(token: str):
+    """Listar todos los usuarios de la PWA (solo administradores)"""
+    require_admin(token)
+
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """SELECT id, name, email, curp, tipo_capturista, estado, municipio,
+                      localidad, telefono, cac_id, cac_nombre, territorio,
+                      rol_comision, correo_institucional, rol_interno, created_at
+               FROM users ORDER BY created_at DESC"""
+        )
+        rows = cur.fetchall()
+
+    return [
+        PWAUserOut(
+            id=str(r["id"]),
+            name=r["name"],
+            email=r["email"],
+            curp=r["curp"],
+            tipo_capturista=r["tipo_capturista"],
+            estado=r["estado"],
+            municipio=r["municipio"],
+            localidad=r["localidad"],
+            telefono=r["telefono"],
+            cac_id=r["cac_id"],
+            cac_nombre=r["cac_nombre"],
+            territorio=r["territorio"],
+            rol_comision=r["rol_comision"],
+            correo_institucional=r["correo_institucional"],
+            rol_interno=r["rol_interno"],
+            created_at=r["created_at"].isoformat(),
+        )
+        for r in rows
+    ]

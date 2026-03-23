@@ -39,6 +39,7 @@ export const useAuthStore = defineStore('auth', () => {
     correo: string
     telefono: string
     password: string
+    rol: 'usuario' | 'administrador'
   }) {
     const res = await authService.register(data)
     user.value = res.user

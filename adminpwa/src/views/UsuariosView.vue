@@ -16,7 +16,12 @@
 
         <router-link to="/usuarios" class="nav-item" :class="{ active: $route.path === '/usuarios' }">
           <Users :size="18" />
-          <span>Usuarios</span>
+          <span>Administradores</span>
+        </router-link>
+
+        <router-link to="/usuarios-pwa" class="nav-item" :class="{ active: $route.path === '/usuarios-pwa' }">
+          <Users :size="18" />
+          <span>Usuarios PWA</span>
         </router-link>
       </nav>
 

@@ -29,6 +29,12 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true }
     },
     {
+      path: '/usuarios-pwa',
+      name: 'UsuariosPWA',
+      component: () => import('@/views/UsuariosPWAView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/'
     }

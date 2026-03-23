@@ -1,5 +1,5 @@
 import api from './api'
-import type { LoginPayload, RegisterPayload, AuthResponse, AdminUser } from '@/types'
+import type { LoginPayload, RegisterPayload, AuthResponse, AdminUser, PWAUser } from '@/types'
 
 export const authService = {
   async login(data: LoginPayload): Promise<AuthResponse> {
@@ -34,5 +34,10 @@ export const authService = {
 
   async deleteUsuario(userId: number, token: string): Promise<void> {
     await api.delete(`/admin/usuarios/${userId}`, { params: { token } })
+  },
+
+  async getUsuariosPWA(token: string): Promise<PWAUser[]> {
+    const res = await api.get('/admin/usuarios-pwa', { params: { token } })
+    return res.data
   }
 }
