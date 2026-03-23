@@ -117,7 +117,7 @@
                 <th class="hide-mobile">Teléfono</th>
                 <th>Tipo</th>
                 <th class="hide-tablet">Estado</th>
-                <th class="hide-mobile" @click="sortBy('created_at')" class="sortable">
+                <th class="hide-mobile sortable" @click="sortBy('created_at')">
                   Registro
                   <ChevronDown v-if="sortField === 'created_at'" :size="14" :class="{ 'sort-asc': sortDir === 'asc' }" />
                 </th>
