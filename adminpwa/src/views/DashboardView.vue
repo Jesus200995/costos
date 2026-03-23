@@ -170,19 +170,18 @@ function handleLogout() {
   min-height: 100vh;
 }
 
-/* ── Sidebar (Apple-style) ── */
+/* ── Sidebar ── */
 .sidebar {
   width: 260px;
-  background: rgba(245, 245, 247, 0.92);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  background: linear-gradient(180deg, #bf360c 0%, #8d2f00 100%);
+  border-right: none;
   display: flex;
   flex-direction: column;
   position: fixed;
   height: 100vh;
   z-index: 100;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+  box-shadow: 4px 0 20px rgba(141, 47, 0, 0.2);
 }
 
 .sidebar-header {
@@ -190,8 +189,8 @@ function handleLogout() {
   align-items: center;
   gap: 0.65rem;
   padding: 1.1rem 1.25rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  color: #1d1d1f;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
   font-weight: 700;
   font-size: 1.05rem;
   letter-spacing: -0.02em;
@@ -205,7 +204,7 @@ function handleLogout() {
 .sidebar-nav-label {
   font-size: 0.7rem;
   font-weight: 600;
-  color: #86868b;
+  color: rgba(255, 255, 255, 0.55);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 0.5rem 0.85rem 0.35rem;
@@ -217,7 +216,7 @@ function handleLogout() {
   gap: 0.65rem;
   padding: 0.55rem 0.85rem;
   border-radius: 8px;
-  color: #3a3a3c;
+  color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
   font-weight: 500;
   font-size: 0.88rem;
@@ -227,18 +226,19 @@ function handleLogout() {
 }
 
 .nav-item:hover {
-  background: rgba(0, 0, 0, 0.04);
-  color: #1d1d1f;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
 }
 
 .nav-item.active {
-  background: rgba(0, 122, 255, 0.1);
-  color: #007aff;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-weight: 600;
 }
 
 .sidebar-footer {
   padding: 0.85rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -253,7 +253,7 @@ function handleLogout() {
 .user-avatar {
   width: 34px;
   height: 34px;
-  background: linear-gradient(135deg, #007aff, #5856d6);
+  background: rgba(255, 255, 255, 0.25);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -272,13 +272,13 @@ function handleLogout() {
 .user-name {
   font-weight: 600;
   font-size: 0.82rem;
-  color: #1d1d1f;
+  color: #fff;
   letter-spacing: -0.01em;
 }
 
 .user-role {
   font-size: 0.7rem;
-  color: #86868b;
+  color: rgba(255, 255, 255, 0.6);
   text-transform: capitalize;
 }
 
@@ -291,14 +291,14 @@ function handleLogout() {
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: #86868b;
+  color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .btn-logout:hover {
-  background: rgba(255, 59, 48, 0.1);
-  color: #ff3b30;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
 }
 
 /* ── Main Content ── */

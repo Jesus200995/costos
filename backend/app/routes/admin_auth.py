@@ -104,7 +104,8 @@ def get_current_admin_id(token: str) -> int:
     """Decodifica token y retorna admin_id"""
     try:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
-        return int(payload["sub"])
+        uid = payload.get("userId") or payload.get("sub")
+        return int(uid)
     except:
         raise HTTPException(401, "Token inválido")
 
