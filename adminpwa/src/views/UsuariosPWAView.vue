@@ -3,8 +3,13 @@
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <Shield :size="22" />
-        <span>COSTOS</span>
+        <div class="sidebar-logo">
+          <Layers :size="30" />
+        </div>
+        <div class="sidebar-brand">
+          <span class="sidebar-brand__title">COSTOS</span>
+          <span class="sidebar-brand__sub">Panel Admin</span>
+        </div>
       </div>
 
       <nav class="sidebar-nav">
@@ -276,7 +281,7 @@ import { authService } from '@/services/auth.service'
 import type { PWAUser } from '@/types'
 import {
   Shield, LayoutDashboard, Users, LogOut, Search, X,
-  ChevronDown, ChevronLeft, ChevronRight
+  ChevronDown, ChevronLeft, ChevronRight, Layers
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -475,7 +480,7 @@ onMounted(() => {
 /* ── Sidebar ── */
 .sidebar {
   width: 260px;
-  background: linear-gradient(180deg, #1b5e20 0%, #0d3b13 100%);
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
   border-right: none;
   display: flex;
   flex-direction: column;
@@ -483,19 +488,47 @@ onMounted(() => {
   height: 100vh;
   z-index: 100;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
-  box-shadow: 4px 0 20px rgba(13, 59, 19, 0.25);
+  box-shadow: 4px 0 24px rgba(15, 23, 42, 0.35);
 }
 
 .sidebar-header {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 1.1rem 1.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  gap: 0.75rem;
+  padding: 1.25rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
   color: #fff;
-  font-weight: 700;
-  font-size: 1.05rem;
-  letter-spacing: -0.02em;
+}
+
+.sidebar-logo {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-brand {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.sidebar-brand__title {
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+}
+
+.sidebar-brand__sub {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .sidebar-nav {
@@ -533,7 +566,7 @@ onMounted(() => {
 }
 
 .nav-item.active {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(99, 102, 241, 0.25);
   color: #fff;
   font-weight: 600;
 }
@@ -607,7 +640,7 @@ onMounted(() => {
 .main-content {
   flex: 1;
   margin-left: 260px;
-  padding: 2rem;
+  padding: 0.75rem 2rem 2rem;
   background: #f5f5f5;
   min-height: 100vh;
 }
@@ -617,11 +650,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(135deg, #1b5e20, #2e7d32);
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
   border-radius: 14px;
   padding: 1.15rem 1.5rem;
   margin-bottom: 1.25rem;
-  box-shadow: 0 2px 8px rgba(27, 94, 32, 0.18);
+  box-shadow: 0 2px 12px rgba(79, 70, 229, 0.2);
 }
 
 .top-bar__title {
@@ -1174,6 +1207,7 @@ onMounted(() => {
   }
 
   .sidebar-header span,
+  .sidebar-brand,
   .nav-item span,
   .user-details,
   .sidebar-nav-label {
@@ -1183,6 +1217,11 @@ onMounted(() => {
   .sidebar-header {
     justify-content: center;
     padding: 1rem 0.5rem;
+  }
+
+  .sidebar-logo {
+    width: 36px;
+    height: 36px;
   }
 
   .nav-item {

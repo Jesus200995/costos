@@ -30,7 +30,7 @@ onMounted(async () => {
   width: 36px;
   height: 36px;
   border: 3px solid #e0e0e0;
-  border-top-color: #1B5E20;
+  border-top-color: #4f46e5;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }

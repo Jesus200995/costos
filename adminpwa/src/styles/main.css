@@ -3,9 +3,9 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 :root {
-  --primary: #1B5E20;
-  --primary-light: #2E7D32;
-  --primary-dark: #0D3F13;
+  --primary: #4f46e5;
+  --primary-light: #6366f1;
+  --primary-dark: #3730a3;
   --danger: #c62828;
   --danger-light: #ffebee;
   --warning: #f9a825;
@@ -63,7 +63,7 @@ body {
 .form-input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(27, 94, 32, 0.1);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
 }
 
 .form-input.error {
