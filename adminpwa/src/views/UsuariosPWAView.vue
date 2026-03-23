@@ -43,11 +43,16 @@
 
     <!-- Main Content -->
     <main class="main-content">
-      <header class="content-header">
-        <div>
-          <h1>Usuarios PWA</h1>
-          <p>Usuarios registrados en la aplicación COSTOS</p>
+      <!-- Top Bar -->
+      <div class="top-bar">
+        <div class="top-bar__info">
+          <h1 class="top-bar__title"><Users :size="22" /> Usuarios PWA</h1>
+          <p class="top-bar__desc">Usuarios registrados en la aplicación móvil COSTOS</p>
         </div>
+      </div>
+
+      <header class="content-header">
+        <div></div>
         <div class="header-stats">
           <div class="stat-mini">
             <span class="stat-mini__value">{{ filteredUsers.length }}</span>
@@ -379,7 +384,7 @@ function getInitials(name: string): string {
 
 function avatarColor(name: string): string {
   const colors = [
-    'linear-gradient(135deg, #bf360c, #e65100)',
+    'linear-gradient(135deg, #1b5e20, #2e7d32)',
     'linear-gradient(135deg, #1565c0, #1976d2)',
     'linear-gradient(135deg, #2e7d32, #388e3c)',
     'linear-gradient(135deg, #6a1b9a, #7b1fa2)',
@@ -466,7 +471,7 @@ onMounted(() => {
 /* ── Sidebar ── */
 .sidebar {
   width: 260px;
-  background: linear-gradient(180deg, #bf360c 0%, #8d2f00 100%);
+  background: linear-gradient(180deg, #1b5e20 0%, #0d3b13 100%);
   border-right: none;
   display: flex;
   flex-direction: column;
@@ -474,7 +479,7 @@ onMounted(() => {
   height: 100vh;
   z-index: 100;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
-  box-shadow: 4px 0 20px rgba(141, 47, 0, 0.2);
+  box-shadow: 4px 0 20px rgba(13, 59, 19, 0.25);
 }
 
 .sidebar-header {
@@ -603,26 +608,41 @@ onMounted(() => {
   min-height: 100vh;
 }
 
+/* ── Top Bar ── */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #1b5e20, #2e7d32);
+  border-radius: 14px;
+  padding: 1.15rem 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 2px 8px rgba(27, 94, 32, 0.18);
+}
+
+.top-bar__title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.top-bar__desc {
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0.15rem 0 0;
+}
+
 .content-header {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
   gap: 1rem;
-}
-
-.content-header h1 {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #333;
-  margin: 0 0 0.25rem;
-}
-
-.content-header p {
-  color: #757575;
-  font-size: 0.95rem;
-  margin: 0;
 }
 
 .header-stats {
@@ -639,7 +659,7 @@ onMounted(() => {
 }
 
 .stat-mini--primary {
-  border-left: 3px solid #bf360c;
+  border-left: 3px solid #1b5e20;
 }
 
 .stat-mini__value {
@@ -690,7 +710,7 @@ onMounted(() => {
 
 .search-input:focus {
   outline: none;
-  border-color: #bf360c;
+  border-color: #1b5e20;
   box-shadow: 0 0 0 3px rgba(191, 54, 12, 0.08);
 }
 
@@ -737,7 +757,7 @@ onMounted(() => {
 
 .filter-select:focus {
   outline: none;
-  border-color: #bf360c;
+  border-color: #1b5e20;
 }
 
 /* ── Loading ── */
@@ -754,7 +774,7 @@ onMounted(() => {
   width: 40px;
   height: 40px;
   border: 3px solid #e0e0e0;
-  border-top-color: #bf360c;
+  border-top-color: #1b5e20;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-bottom: 1rem;
@@ -826,7 +846,7 @@ onMounted(() => {
 }
 
 .table th.sortable:hover {
-  color: #bf360c;
+  color: #1b5e20;
 }
 
 .sort-asc {
@@ -960,13 +980,13 @@ onMounted(() => {
 
 .page-btn:hover:not(:disabled) {
   background: #f5f5f5;
-  border-color: #bf360c;
-  color: #bf360c;
+  border-color: #1b5e20;
+  color: #1b5e20;
 }
 
 .page-btn.active {
-  background: #bf360c;
-  border-color: #bf360c;
+  background: #1b5e20;
+  border-color: #1b5e20;
   color: #fff;
 }
 

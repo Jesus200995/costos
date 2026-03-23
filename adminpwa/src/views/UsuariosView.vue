@@ -43,11 +43,16 @@
 
     <!-- Main Content -->
     <main class="main-content">
-      <header class="content-header">
-        <div>
-          <h1>Gestión de usuarios</h1>
-          <p>Administra los usuarios del sistema</p>
+      <!-- Top Bar -->
+      <div class="top-bar">
+        <div class="top-bar__info">
+          <h1 class="top-bar__title"><Shield :size="22" /> Gestión de Administradores</h1>
+          <p class="top-bar__desc">Administra los usuarios del panel administrativo</p>
         </div>
+      </div>
+
+      <header class="content-header">
+        <div></div>
         <div class="header-stats">
           <div class="stat-mini">
             <span class="stat-mini__value">{{ usuarios.length }}</span>
@@ -288,7 +293,7 @@ onMounted(() => {
 /* ── Sidebar ── */
 .sidebar {
   width: 260px;
-  background: linear-gradient(180deg, #bf360c 0%, #8d2f00 100%);
+  background: linear-gradient(180deg, #1b5e20 0%, #0d3b13 100%);
   border-right: none;
   display: flex;
   flex-direction: column;
@@ -296,7 +301,7 @@ onMounted(() => {
   height: 100vh;
   z-index: 100;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
-  box-shadow: 4px 0 20px rgba(141, 47, 0, 0.2);
+  box-shadow: 4px 0 20px rgba(13, 59, 19, 0.25);
 }
 
 .sidebar-header {
@@ -425,26 +430,41 @@ onMounted(() => {
   min-height: 100vh;
 }
 
+/* ── Top Bar ── */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #1b5e20, #2e7d32);
+  border-radius: 14px;
+  padding: 1.15rem 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 2px 8px rgba(27, 94, 32, 0.18);
+}
+
+.top-bar__title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.top-bar__desc {
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0.15rem 0 0;
+}
+
 .content-header {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
   gap: 1rem;
-}
-
-.content-header h1 {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #333;
-  margin: 0 0 0.25rem;
-}
-
-.content-header p {
-  color: #757575;
-  font-size: 0.95rem;
-  margin: 0;
 }
 
 .header-stats {

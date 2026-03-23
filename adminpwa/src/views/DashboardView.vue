@@ -53,10 +53,16 @@
 
     <!-- Main Content -->
     <main class="main-content">
-      <header class="content-header">
-        <h1>Dashboard</h1>
-        <p>Bienvenido, {{ auth.user?.nombre }} {{ auth.user?.apellido_paterno }}</p>
-      </header>
+      <!-- Top Bar -->
+      <div class="top-bar">
+        <div class="top-bar__info">
+          <h1 class="top-bar__title"><LayoutDashboard :size="22" /> Dashboard</h1>
+          <p class="top-bar__desc">Panel de control — Bienvenido, {{ auth.user?.nombre }} {{ auth.user?.apellido_paterno }}</p>
+        </div>
+        <div class="top-bar__right">
+          <span class="top-bar__date">{{ currentDate }}</span>
+        </div>
+      </div>
 
       <div class="dashboard-grid">
         <!-- Stats Cards -->
@@ -146,6 +152,10 @@ import {
 const router = useRouter()
 const auth = useAuthStore()
 
+const currentDate = computed(() => {
+  return new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+})
+
 onMounted(async () => {
   if (!auth.isAuthenticated) {
     await auth.init()
@@ -183,7 +193,7 @@ function handleLogout() {
 /* ── Sidebar ── */
 .sidebar {
   width: 260px;
-  background: linear-gradient(180deg, #bf360c 0%, #8d2f00 100%);
+  background: linear-gradient(180deg, #1b5e20 0%, #0d3b13 100%);
   border-right: none;
   display: flex;
   flex-direction: column;
@@ -191,7 +201,7 @@ function handleLogout() {
   height: 100vh;
   z-index: 100;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
-  box-shadow: 4px 0 20px rgba(141, 47, 0, 0.2);
+  box-shadow: 4px 0 20px rgba(13, 59, 19, 0.25);
 }
 
 .sidebar-header {
@@ -320,20 +330,45 @@ function handleLogout() {
   min-height: 100vh;
 }
 
-.content-header {
-  margin-bottom: 2rem;
+/* ── Top Bar ── */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #1b5e20, #2e7d32);
+  border-radius: 14px;
+  padding: 1.15rem 1.5rem;
+  margin-bottom: 1.75rem;
+  box-shadow: 0 2px 8px rgba(27, 94, 32, 0.18);
 }
 
-.content-header h1 {
-  font-size: 1.75rem;
+.top-bar__title {
+  font-size: 1.4rem;
   font-weight: 700;
-  color: #333;
-  margin: 0 0 0.25rem;
+  color: #fff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.content-header p {
-  color: #757575;
-  font-size: 0.95rem;
+.top-bar__desc {
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0.15rem 0 0;
+}
+
+.top-bar__right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.top-bar__date {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: capitalize;
+  white-space: nowrap;
 }
 
 /* ── Stats Grid ── */
