@@ -97,6 +97,16 @@ class UpdateRolRequest(BaseModel):
     rol: str = Field(..., pattern='^(usuario|administrador)$')
 
 
+class AdminUserUpdateRequest(BaseModel):
+    nombre: Optional[str] = None
+    apellido_paterno: Optional[str] = None
+    apellido_materno: Optional[str] = None
+    curp: Optional[str] = None
+    correo: Optional[str] = None
+    telefono: Optional[str] = None
+    rol: Optional[str] = None
+
+
 # ═══════════════════════════════════════════════════════════════════
 # AUTH HELPERS
 # ═══════════════════════════════════════════════════════════════════
@@ -343,6 +353,54 @@ def update_rol(user_id: int, data: UpdateRolRequest, token: str):
                RETURNING id, nombre, apellido_paterno, apellido_materno, curp, correo, telefono, 
                          rol, estatus, created_at""",
             (data.rol, user_id),
+        )
+        row = cur.fetchone()
+
+    if not row:
+        raise HTTPException(404, "Usuario no encontrado")
+
+    return AdminUserListOut(
+        id=row["id"],
+        nombre=row["nombre"],
+        apellido_paterno=row["apellido_paterno"],
+        apellido_materno=row["apellido_materno"],
+        curp=row["curp"],
+        correo=row["correo"],
+        telefono=row["telefono"],
+        rol=row["rol"],
+        estatus=row["estatus"],
+        created_at=row["created_at"].isoformat(),
+    )
+
+
+@router.put("/usuarios/{user_id}", response_model=AdminUserListOut)
+def update_usuario(user_id: int, data: AdminUserUpdateRequest, token: str):
+    """Actualizar campos de usuario administrativo (solo administradores)"""
+    admin_id = require_admin(token)
+
+    updates = data.dict(exclude_unset=True)
+    if not updates:
+        raise HTTPException(400, "No se proporcionaron campos para actualizar")
+
+    # No permitir cambiar rol propio a usuario
+    if user_id == admin_id and updates.get("rol") == "usuario":
+        raise HTTPException(400, "No puedes quitarte el rol de administrador")
+
+    set_parts = []
+    values = []
+    for field, value in updates.items():
+        set_parts.append(f"{field} = %s")
+        values.append(value)
+    values.append(user_id)
+
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            f"""UPDATE usersadmin SET {', '.join(set_parts)}, updated_at = CURRENT_TIMESTAMP
+               WHERE id = %s
+               RETURNING id, nombre, apellido_paterno, apellido_materno, curp, correo, telefono,
+                         rol, estatus, created_at""",
+            values,
         )
         row = cur.fetchone()
 

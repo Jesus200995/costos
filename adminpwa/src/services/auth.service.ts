@@ -32,6 +32,11 @@ export const authService = {
     return res.data
   },
 
+  async updateUsuario(userId: number, data: Partial<AdminUser>, token: string): Promise<AdminUser> {
+    const res = await api.put(`/admin/usuarios/${userId}`, data, { params: { token } })
+    return res.data
+  },
+
   async deleteUsuario(userId: number, token: string): Promise<void> {
     await api.delete(`/admin/usuarios/${userId}`, { params: { token } })
   },
