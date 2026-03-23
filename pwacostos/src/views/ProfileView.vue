@@ -282,7 +282,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { catalogoService } from '@/services/catalogo.service'
@@ -389,11 +389,29 @@ const canSave = computed(() => {
   return true
 })
 
+// Watcher: limpiar campos del rol anterior al cambiar tipo_capturista en edición
+watch(() => form.tipo_capturista, (newVal, oldVal) => {
+  if (!editing.value || !oldVal) return
+  if (newVal === 'OFICINAS') {
+    // Limpia campos CAC/COM
+    form.cac_id = ''
+    form.cac_nombre = ''
+    form.territorio = ''
+    form.ruta = ''
+    territorioFromCatalog.value = false
+  } else if (newVal === 'REPRESENTANTE_CAC' || newVal === 'COM_COMERCIALIZACION') {
+    // Limpia campos Oficinas
+    form.correo_institucional = ''
+    rolInternoSelect.value = ''
+    rolInternoOtro.value = ''
+  }
+})
+
 function closeSidebar() {
   if (ui.sidebarOpen) ui.closeSidebar()
 }
 
-function startEdit() {
+async function startEdit() {
   const u = authStore.user
   if (!u) return
   form.name = u.name || ''
@@ -421,9 +439,17 @@ function startEdit() {
   serverError.value = ''
   Object.keys(errors).forEach(k => errors[k] = '')
 
-  // Load municipios for current estado
+  // Load municipios for current estado and detect territorio from catalog
   if (form.estado) {
-    loadMunicipios(form.estado)
+    await loadMunicipios(form.estado)
+    if (form.municipio) {
+      const sel = municipios.value.find(m => m.clave_mun === form.municipio)
+      if (sel?.territorio && sel.territorio === form.territorio) {
+        territorioFromCatalog.value = true
+      } else {
+        territorioFromCatalog.value = false
+      }
+    }
   }
 
   editing.value = true
@@ -486,6 +512,10 @@ async function saveProfile() {
     ? rolInternoOtro.value.trim() || null
     : rolInternoSelect.value || null
 
+  // Solo enviar campos relevantes al rol actual
+  const isCAC = form.tipo_capturista === 'REPRESENTANTE_CAC' || form.tipo_capturista === 'COM_COMERCIALIZACION'
+  const isOficinas = form.tipo_capturista === 'OFICINAS'
+
   try {
     await authStore.updateProfile({
       name: form.name,
@@ -495,13 +525,13 @@ async function saveProfile() {
       municipio: form.municipio,
       localidad: form.localidad || null,
       telefono: form.telefono || null,
-      cac_id: form.cac_id || null,
-      cac_nombre: form.cac_nombre || null,
-      territorio: form.territorio || null,
-      ruta: form.ruta || null,
+      cac_id: isCAC ? (form.cac_id || null) : null,
+      cac_nombre: isCAC ? (form.cac_nombre || null) : null,
+      territorio: isCAC ? (form.territorio || null) : null,
+      ruta: isCAC ? (form.ruta || null) : null,
       rol_comision: null,
-      correo_institucional: form.correo_institucional || null,
-      rol_interno: finalRolInterno,
+      correo_institucional: isOficinas ? (form.correo_institucional || null) : null,
+      rol_interno: isOficinas ? finalRolInterno : null,
     })
     editing.value = false
     ui.showToast('Perfil actualizado correctamente', 'success')
