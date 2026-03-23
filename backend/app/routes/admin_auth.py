@@ -399,6 +399,7 @@ class PWAUserOut(BaseModel):
     cac_id: Optional[str] = None
     cac_nombre: Optional[str] = None
     territorio: Optional[str] = None
+    ruta: Optional[str] = None
     rol_comision: Optional[str] = None
     correo_institucional: Optional[str] = None
     rol_interno: Optional[str] = None
@@ -414,7 +415,7 @@ def list_usuarios_pwa(token: str):
         cur = conn.cursor()
         cur.execute(
             """SELECT id, name, email, curp, tipo_capturista, estado, municipio,
-                      localidad, telefono, cac_id, cac_nombre, territorio,
+                      localidad, telefono, cac_id, cac_nombre, territorio, ruta,
                       rol_comision, correo_institucional, rol_interno, created_at
                FROM users ORDER BY created_at DESC"""
         )
@@ -434,6 +435,7 @@ def list_usuarios_pwa(token: str):
             cac_id=r["cac_id"],
             cac_nombre=r["cac_nombre"],
             territorio=r["territorio"],
+            ruta=r["ruta"],
             rol_comision=r["rol_comision"],
             correo_institucional=r["correo_institucional"],
             rol_interno=r["rol_interno"],

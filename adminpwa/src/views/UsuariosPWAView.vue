@@ -228,6 +228,10 @@
                 <span>{{ selectedUser.territorio || '—' }}</span>
               </div>
               <div class="detail-item">
+                <label>Ruta</label>
+                <span>{{ selectedUser.ruta || '—' }}</span>
+              </div>
+              <div class="detail-item">
                 <label>CAC ID</label>
                 <span class="mono">{{ selectedUser.cac_id || '—' }}</span>
               </div>

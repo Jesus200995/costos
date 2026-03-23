@@ -36,11 +36,11 @@ def register(data: RegisterRequest):
         hashed = hash_password(data.password)
         cur.execute(
             """INSERT INTO users (name, email, password, curp, tipo_capturista, estado, municipio,
-               localidad, telefono, consent, cac_id, cac_nombre, territorio,
+               localidad, telefono, consent, cac_id, cac_nombre, territorio, ruta,
                rol_comision, correo_institucional, rol_interno)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                RETURNING id, name, email, avatar, created_at, curp, tipo_capturista, estado,
-               municipio, localidad, telefono, consent, cac_id, cac_nombre, territorio,
+               municipio, localidad, telefono, consent, cac_id, cac_nombre, territorio, ruta,
                rol_comision, correo_institucional, rol_interno""",
             (
                 data.name.strip().upper(),
@@ -56,6 +56,7 @@ def register(data: RegisterRequest):
                 data.cac_id.strip().upper() if data.cac_id else None,
                 data.cac_nombre.strip().upper() if data.cac_nombre else None,
                 data.territorio or None,
+                data.ruta.strip().upper() if data.ruta else None,
                 data.rol_comision or None,
                 data.correo_institucional or None,
                 data.rol_interno or None,
@@ -79,6 +80,7 @@ def register(data: RegisterRequest):
         cac_id=row["cac_id"],
         cac_nombre=row["cac_nombre"],
         territorio=row["territorio"],
+        ruta=row["ruta"],
         rol_comision=row["rol_comision"],
         correo_institucional=row["correo_institucional"],
         rol_interno=row["rol_interno"],
@@ -94,7 +96,7 @@ def login(data: LoginRequest):
         cur.execute(
             """SELECT id, name, email, password, avatar, created_at, curp, tipo_capturista,
                estado, municipio, localidad, telefono, consent, cac_id, cac_nombre,
-               territorio, rol_comision, correo_institucional, rol_interno
+               territorio, ruta, rol_comision, correo_institucional, rol_interno
                FROM users WHERE email = %s""",
             (data.email.lower().strip(),),
         )
@@ -119,6 +121,7 @@ def login(data: LoginRequest):
         cac_id=row["cac_id"],
         cac_nombre=row["cac_nombre"],
         territorio=row["territorio"],
+        ruta=row["ruta"],
         rol_comision=row["rol_comision"],
         correo_institucional=row["correo_institucional"],
         rol_interno=row["rol_interno"],
@@ -134,7 +137,7 @@ def profile(user_id: str = Depends(get_current_user_id)):
         cur.execute(
             """SELECT id, name, email, avatar, created_at, curp, tipo_capturista,
                estado, municipio, localidad, telefono, consent, cac_id, cac_nombre,
-               territorio, rol_comision, correo_institucional, rol_interno
+               territorio, ruta, rol_comision, correo_institucional, rol_interno
                FROM users WHERE id = %s::uuid""",
             (user_id,),
         )
@@ -159,6 +162,7 @@ def profile(user_id: str = Depends(get_current_user_id)):
         cac_id=row["cac_id"],
         cac_nombre=row["cac_nombre"],
         territorio=row["territorio"],
+        ruta=row["ruta"],
         rol_comision=row["rol_comision"],
         correo_institucional=row["correo_institucional"],
         rol_interno=row["rol_interno"],
@@ -186,11 +190,11 @@ def update_profile(data: UpdateProfileRequest, user_id: str = Depends(get_curren
 
         cur.execute(
             """UPDATE users SET name=%s, curp=%s, tipo_capturista=%s, estado=%s, municipio=%s,
-               localidad=%s, telefono=%s, cac_id=%s, cac_nombre=%s, territorio=%s,
+               localidad=%s, telefono=%s, cac_id=%s, cac_nombre=%s, territorio=%s, ruta=%s,
                rol_comision=%s, correo_institucional=%s, rol_interno=%s
                WHERE id=%s::uuid
                RETURNING id, name, email, avatar, created_at, curp, tipo_capturista, estado,
-               municipio, localidad, telefono, consent, cac_id, cac_nombre, territorio,
+               municipio, localidad, telefono, consent, cac_id, cac_nombre, territorio, ruta,
                rol_comision, correo_institucional, rol_interno""",
             (
                 data.name.strip().upper(),
@@ -203,6 +207,7 @@ def update_profile(data: UpdateProfileRequest, user_id: str = Depends(get_curren
                 data.cac_id.strip().upper() if data.cac_id else None,
                 data.cac_nombre.strip().upper() if data.cac_nombre else None,
                 data.territorio or None,
+                data.ruta.strip().upper() if data.ruta else None,
                 data.rol_comision or None,
                 data.correo_institucional or None,
                 data.rol_interno or None,
@@ -230,6 +235,7 @@ def update_profile(data: UpdateProfileRequest, user_id: str = Depends(get_curren
         cac_id=row["cac_id"],
         cac_nombre=row["cac_nombre"],
         territorio=row["territorio"],
+        ruta=row["ruta"],
         rol_comision=row["rol_comision"],
         correo_institucional=row["correo_institucional"],
         rol_interno=row["rol_interno"],

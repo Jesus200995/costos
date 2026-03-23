@@ -22,6 +22,7 @@ export const authService = {
       cac_id: payload.cac_id || null,
       cac_nombre: payload.cac_nombre || null,
       territorio: payload.territorio || null,
+      ruta: payload.ruta || null,
       rol_comision: payload.rol_comision || null,
       correo_institucional: payload.correo_institucional || null,
       rol_interno: payload.rol_interno || null,

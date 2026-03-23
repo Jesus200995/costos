@@ -14,6 +14,7 @@ export interface User {
   cac_id?: string
   cac_nombre?: string
   territorio?: string
+  ruta?: string
   rol_comision?: string
   correo_institucional?: string
   rol_interno?: string
@@ -39,6 +40,7 @@ export interface RegisterPayload {
   cac_id?: string
   cac_nombre?: string
   territorio?: string
+  ruta?: string
   rol_comision?: string
   correo_institucional?: string
   rol_interno?: string

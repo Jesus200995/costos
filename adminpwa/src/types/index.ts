@@ -24,6 +24,7 @@ export interface PWAUser {
   cac_id: string | null
   cac_nombre: string | null
   territorio: string | null
+  ruta: string | null
   rol_comision: string | null
   correo_institucional: string | null
   rol_interno: string | null

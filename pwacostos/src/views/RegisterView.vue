@@ -162,8 +162,8 @@
         <Transition name="step-slide" mode="out-in">
           <div v-if="step === 3" key="step3" class="step-content">
 
-            <template v-if="form.tipo_capturista === 'REPRESENTANTE_CAC'">
-              <h3 class="step-title">Datos de CAC</h3>
+            <template v-if="form.tipo_capturista === 'REPRESENTANTE_CAC' || form.tipo_capturista === 'COM_COMERCIALIZACION'">
+              <h3 class="step-title">{{ form.tipo_capturista === 'REPRESENTANTE_CAC' ? 'Datos de CAC' : 'Comisión de comercialización' }}</h3>
 
               <div class="form-group" :class="{ 'form-group--error': errors.cac_id, 'form-group--focus': focused === 'cac_id' }">
                 <label class="form-label">CAC ID</label>
@@ -183,8 +183,8 @@
                 <Transition name="slide-error"><span v-if="errors.cac_nombre" class="form-error">{{ errors.cac_nombre }}</span></Transition>
               </div>
 
-              <div class="form-group" :class="{ 'form-group--focus': focused === 'territorio' }">
-                <label class="form-label">Territorio <span v-if="!territorioFromCatalog" class="form-optional">(opcional)</span><span v-else class="form-auto-tag">Automático</span></label>
+              <div class="form-group" :class="{ 'form-group--error': errors.territorio, 'form-group--focus': focused === 'territorio' }">
+                <label class="form-label">Territorio <span v-if="territorioFromCatalog" class="form-auto-tag">Automático</span></label>
                 <div class="form-input-wrapper" :class="{ 'form-input-wrapper--readonly': territorioFromCatalog }">
                   <MapIcon :size="20" class="form-icon" />
                   <select v-model="form.territorio" :disabled="territorioFromCatalog" @focus="focused = 'territorio'" @blur="focused = ''">
@@ -192,31 +192,16 @@
                     <option v-for="t in territorioOptions" :key="t" :value="t">{{ t }}</option>
                   </select>
                 </div>
+                <Transition name="slide-error"><span v-if="errors.territorio" class="form-error">{{ errors.territorio }}</span></Transition>
               </div>
-            </template>
 
-            <template v-if="form.tipo_capturista === 'COM_COMERCIALIZACION'">
-              <h3 class="step-title">Comisión de comercialización</h3>
-
-              <div class="form-group" :class="{ 'form-group--focus': focused === 'rol_comision' }">
-                <label class="form-label">Rol dentro de la comisión <span class="form-optional">(opcional)</span></label>
+              <div class="form-group" :class="{ 'form-group--error': errors.ruta, 'form-group--focus': focused === 'ruta' }">
+                <label class="form-label">Ruta</label>
                 <div class="form-input-wrapper">
-                  <Users :size="20" class="form-icon" />
-                  <select v-model="rolComisionSelect" @focus="focused = 'rol_comision'" @blur="focused = ''">
-                    <option value="">Selecciona rol</option>
-                    <option value="Coordinación">Coordinación</option>
-                    <option value="Integrante">Integrante</option>
-                    <option value="Apoyo">Apoyo</option>
-                    <option value="Otro">Otro</option>
-                  </select>
+                  <MapIcon :size="20" class="form-icon" />
+                  <input v-model="form.ruta" type="text" placeholder="Ruta 05 / Nombre ruta" style="text-transform: uppercase" @input="form.ruta = toUpperNoTilde(form.ruta)" @focus="focused = 'ruta'" @blur="focused = ''" />
                 </div>
-              </div>
-              <div v-if="rolComisionSelect === 'Otro'" class="form-group">
-                <label class="form-label">Especifica el rol</label>
-                <div class="form-input-wrapper">
-                  <Pencil :size="20" class="form-icon" />
-                  <input v-model="rolComisionOtro" type="text" placeholder="Escribe el rol" @focus="focused = 'rol_comision_otro'" @blur="focused = ''" />
-                </div>
+                <Transition name="slide-error"><span v-if="errors.ruta" class="form-error">{{ errors.ruta }}</span></Transition>
               </div>
             </template>
 
@@ -313,7 +298,7 @@ import {
   UserPlus, User, Mail, Lock, ShieldCheck,
   Eye, EyeOff, ArrowLeft, Loader2, AlertCircle,
   ChevronRight, ChevronLeft, Briefcase, MapPin,
-  Phone, Home, Hash, Building, Map as MapIcon, Users, Info,
+  Phone, Home, Hash, Building, Map as MapIcon, Info,
   Pencil
 } from 'lucide-vue-next'
 
@@ -335,8 +320,6 @@ const loadingMunicipios = ref(false)
 const territorioFromCatalog = ref(false)
 
 // "Otro" logic
-const rolComisionSelect = ref('')
-const rolComisionOtro = ref('')
 const rolInternoSelect = ref('')
 const rolInternoOtro = ref('')
 
@@ -395,6 +378,7 @@ const form = reactive({
   cac_id: '',
   cac_nombre: '',
   territorio: '',
+  ruta: '',
   rol_comision: '',
   correo_institucional: '',
   rol_interno: ''
@@ -411,7 +395,9 @@ const errors = reactive<Record<string, string>>({
   municipio: '',
   consent: '',
   cac_id: '',
-  cac_nombre: ''
+  cac_nombre: '',
+  territorio: '',
+  ruta: ''
 })
 
 const strengthPercent = computed(() => {
@@ -450,9 +436,11 @@ const canSubmit = computed(() => {
   if (!form.municipio) return false
   if (!form.consent) return false
   // Role-specific required
-  if (form.tipo_capturista === 'REPRESENTANTE_CAC') {
+  if (form.tipo_capturista === 'REPRESENTANTE_CAC' || form.tipo_capturista === 'COM_COMERCIALIZACION') {
     if (!form.cac_id.trim()) return false
     if (!form.cac_nombre.trim()) return false
+    if (!form.territorio) return false
+    if (!form.ruta.trim()) return false
   }
   return true
 })
@@ -520,9 +508,11 @@ function validateStep2(): boolean {
 function validateStep3(): boolean {
   let valid = true
   clearErrors()
-  if (form.tipo_capturista === 'REPRESENTANTE_CAC') {
+  if (form.tipo_capturista === 'REPRESENTANTE_CAC' || form.tipo_capturista === 'COM_COMERCIALIZACION') {
     if (!form.cac_id.trim()) { errors.cac_id = 'El CAC ID es obligatorio'; valid = false }
     if (!form.cac_nombre.trim()) { errors.cac_nombre = 'El nombre del CAC es obligatorio'; valid = false }
+    if (!form.territorio) { errors.territorio = 'El territorio es obligatorio'; valid = false }
+    if (!form.ruta.trim()) { errors.ruta = 'La ruta es obligatoria'; valid = false }
   }
   if (!form.consent) { errors.consent = 'Debes aceptar el aviso de privacidad'; valid = false }
   return valid
@@ -538,9 +528,7 @@ async function handleRegister() {
   if (!validateStep3()) return
 
   // Compute final rol values
-  form.rol_comision = rolComisionSelect.value === 'Otro'
-    ? rolComisionOtro.value.trim()
-    : rolComisionSelect.value
+  form.rol_comision = ''
   form.rol_interno = rolInternoSelect.value === 'Otro'
     ? rolInternoOtro.value.trim()
     : rolInternoSelect.value

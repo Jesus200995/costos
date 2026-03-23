@@ -68,8 +68,8 @@
             </div>
           </section>
 
-          <section v-if="authStore.user?.tipo_capturista === 'REPRESENTANTE_CAC'" class="profile-section">
-            <h3 class="profile-section__title"><Building :size="18" /> Datos CAC</h3>
+          <section v-if="authStore.user?.tipo_capturista === 'REPRESENTANTE_CAC' || authStore.user?.tipo_capturista === 'COM_COMERCIALIZACION'" class="profile-section">
+            <h3 class="profile-section__title"><Building :size="18" /> {{ authStore.user?.tipo_capturista === 'REPRESENTANTE_CAC' ? 'Datos CAC' : 'Comisión de comercialización' }}</h3>
             <div class="profile-field">
               <span class="profile-field__label">CAC ID</span>
               <span class="profile-field__value">{{ authStore.user?.cac_id || '—' }}</span>
@@ -82,13 +82,9 @@
               <span class="profile-field__label">Territorio</span>
               <span class="profile-field__value">{{ authStore.user?.territorio || '—' }}</span>
             </div>
-          </section>
-
-          <section v-if="authStore.user?.tipo_capturista === 'COM_COMERCIALIZACION'" class="profile-section">
-            <h3 class="profile-section__title"><Users :size="18" /> Comisión de comercialización</h3>
             <div class="profile-field">
-              <span class="profile-field__label">Rol en comisión</span>
-              <span class="profile-field__value">{{ authStore.user?.rol_comision || '—' }}</span>
+              <span class="profile-field__label">Ruta</span>
+              <span class="profile-field__value">{{ authStore.user?.ruta || '—' }}</span>
             </div>
           </section>
 
@@ -186,9 +182,9 @@
               </div>
             </section>
 
-            <!-- REPRESENTANTE_CAC fields -->
-            <section v-if="form.tipo_capturista === 'REPRESENTANTE_CAC'" class="profile-section">
-              <h3 class="profile-section__title"><Building :size="18" /> Datos CAC</h3>
+            <!-- REP_CAC + COM_COMERCIALIZACION fields (compartidos) -->
+            <section v-if="form.tipo_capturista === 'REPRESENTANTE_CAC' || form.tipo_capturista === 'COM_COMERCIALIZACION'" class="profile-section">
+              <h3 class="profile-section__title"><Building :size="18" /> {{ form.tipo_capturista === 'REPRESENTANTE_CAC' ? 'Datos CAC' : 'Comisión de comercialización' }}</h3>
 
               <div class="form-group" :class="{ 'form-group--error': errors.cac_id }">
                 <label class="form-label">CAC ID</label>
@@ -208,8 +204,8 @@
                 <span v-if="errors.cac_nombre" class="form-error">{{ errors.cac_nombre }}</span>
               </div>
 
-              <div class="form-group">
-                <label class="form-label">Territorio <span v-if="!territorioFromCatalog" class="form-optional">(opcional)</span><span v-else class="form-auto-tag">Automático</span></label>
+              <div class="form-group" :class="{ 'form-group--error': errors.territorio }">
+                <label class="form-label">Territorio <span v-if="territorioFromCatalog" class="form-auto-tag">Automático</span></label>
                 <div class="form-input-wrapper" :class="{ 'form-input-wrapper--readonly': territorioFromCatalog }">
                   <MapPinIcon :size="20" class="form-icon" />
                   <select v-model="form.territorio" :disabled="territorioFromCatalog">
@@ -217,32 +213,16 @@
                     <option v-for="t in territorioOptions" :key="t" :value="t">{{ t }}</option>
                   </select>
                 </div>
+                <span v-if="errors.territorio" class="form-error">{{ errors.territorio }}</span>
               </div>
-            </section>
 
-            <!-- COM_COMERCIALIZACION fields -->
-            <section v-if="form.tipo_capturista === 'COM_COMERCIALIZACION'" class="profile-section">
-              <h3 class="profile-section__title"><Users :size="18" /> Comisión de comercialización</h3>
-
-              <div class="form-group">
-                <label class="form-label">Rol dentro de la comisión <span class="form-optional">(opcional)</span></label>
+              <div class="form-group" :class="{ 'form-group--error': errors.ruta }">
+                <label class="form-label">Ruta</label>
                 <div class="form-input-wrapper">
-                  <Users :size="20" class="form-icon" />
-                  <select v-model="rolComisionSelect">
-                    <option value="">Selecciona rol</option>
-                    <option value="Coordinación">Coordinación</option>
-                    <option value="Integrante">Integrante</option>
-                    <option value="Apoyo">Apoyo</option>
-                    <option value="Otro">Otro</option>
-                  </select>
+                  <MapPinIcon :size="20" class="form-icon" />
+                  <input v-model="form.ruta" type="text" placeholder="Ruta 05 / Nombre ruta" style="text-transform: uppercase" @input="form.ruta = toUpperNoTilde(form.ruta)" />
                 </div>
-              </div>
-              <div v-if="rolComisionSelect === 'Otro'" class="form-group">
-                <label class="form-label">Especifica el rol</label>
-                <div class="form-input-wrapper">
-                  <Pencil :size="20" class="form-icon" />
-                  <input v-model="rolComisionOtro" type="text" placeholder="Escribe el rol" />
-                </div>
+                <span v-if="errors.ruta" class="form-error">{{ errors.ruta }}</span>
               </div>
             </section>
 
@@ -312,7 +292,7 @@ import AppSidebar from '@/components/AppSidebar.vue'
 import AppToast from '@/components/AppToast.vue'
 import {
   ArrowLeft, Pencil, X, User as UserIcon, MapPin,
-  Building, Briefcase, Users, Hash, Phone, Home,
+  Building, Briefcase, Hash, Phone, Home,
   Mail, Save, Loader2, AlertCircle,
   Map as MapPinIcon
 } from 'lucide-vue-next'
@@ -330,12 +310,9 @@ const loadingMunicipios = ref(false)
 const territorioFromCatalog = ref(false)
 
 // "Otro" logic
-const rolComisionSelect = ref('')
-const rolComisionOtro = ref('')
 const rolInternoSelect = ref('')
 const rolInternoOtro = ref('')
 
-const knownRolComision = ['Coordinación', 'Integrante', 'Apoyo']
 const knownRolInterno = ['Director General', 'Director de Área', 'Facilitador Comunitario', 'JUD', 'Técnico Social', 'Técnico Productivo']
 
 const territorioOptions = [
@@ -363,13 +340,13 @@ const form = reactive({
   cac_id: '',
   cac_nombre: '',
   territorio: '',
-  rol_comision: '',
+  ruta: '',
   correo_institucional: '',
   rol_interno: ''
 })
 
 const errors = reactive<Record<string, string>>({
-  name: '', curp: '', estado: '', municipio: '', cac_id: '', cac_nombre: ''
+  name: '', curp: '', estado: '', municipio: '', cac_id: '', cac_nombre: '', territorio: '', ruta: ''
 })
 
 const initials = computed(() => {
@@ -403,9 +380,11 @@ const canSave = computed(() => {
   if (!form.curp.trim() || form.curp.trim().length !== 18) return false
   if (!form.estado) return false
   if (!form.municipio) return false
-  if (form.tipo_capturista === 'REPRESENTANTE_CAC') {
+  if (form.tipo_capturista === 'REPRESENTANTE_CAC' || form.tipo_capturista === 'COM_COMERCIALIZACION') {
     if (!form.cac_id.trim()) return false
     if (!form.cac_nombre.trim()) return false
+    if (!form.territorio) return false
+    if (!form.ruta.trim()) return false
   }
   return true
 })
@@ -427,16 +406,8 @@ function startEdit() {
   form.cac_id = u.cac_id || ''
   form.cac_nombre = u.cac_nombre || ''
   form.territorio = u.territorio || ''
+  form.ruta = u.ruta || ''
   form.correo_institucional = u.correo_institucional || ''
-
-  // Rol comisión - detect "Otro"
-  if (u.rol_comision && !knownRolComision.includes(u.rol_comision)) {
-    rolComisionSelect.value = 'Otro'
-    rolComisionOtro.value = u.rol_comision
-  } else {
-    rolComisionSelect.value = u.rol_comision || ''
-    rolComisionOtro.value = ''
-  }
 
   // Rol interno - detect "Otro"
   if (u.rol_interno && !knownRolInterno.includes(u.rol_interno)) {
@@ -497,9 +468,11 @@ function validate(): boolean {
   if (!form.curp.trim() || form.curp.trim().length !== 18) { errors.curp = 'La CURP debe tener 18 caracteres'; valid = false }
   if (!form.estado) { errors.estado = 'Selecciona un estado'; valid = false }
   if (!form.municipio) { errors.municipio = 'Selecciona un municipio'; valid = false }
-  if (form.tipo_capturista === 'REPRESENTANTE_CAC') {
+  if (form.tipo_capturista === 'REPRESENTANTE_CAC' || form.tipo_capturista === 'COM_COMERCIALIZACION') {
     if (!form.cac_id.trim()) { errors.cac_id = 'El CAC ID es obligatorio'; valid = false }
     if (!form.cac_nombre.trim()) { errors.cac_nombre = 'El nombre del CAC es obligatorio'; valid = false }
+    if (!form.territorio) { errors.territorio = 'El territorio es obligatorio'; valid = false }
+    if (!form.ruta.trim()) { errors.ruta = 'La ruta es obligatoria'; valid = false }
   }
   return valid
 }
@@ -509,10 +482,6 @@ async function saveProfile() {
   if (!validate()) return
 
   // Compute final rol values
-  const finalRolComision = rolComisionSelect.value === 'Otro'
-    ? rolComisionOtro.value.trim() || null
-    : rolComisionSelect.value || null
-
   const finalRolInterno = rolInternoSelect.value === 'Otro'
     ? rolInternoOtro.value.trim() || null
     : rolInternoSelect.value || null
@@ -529,7 +498,8 @@ async function saveProfile() {
       cac_id: form.cac_id || null,
       cac_nombre: form.cac_nombre || null,
       territorio: form.territorio || null,
-      rol_comision: finalRolComision,
+      ruta: form.ruta || null,
+      rol_comision: null,
       correo_institucional: form.correo_institucional || null,
       rol_interno: finalRolInterno,
     })

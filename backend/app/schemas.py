@@ -14,11 +14,12 @@ class RegisterRequest(BaseModel):
     localidad: Optional[str] = None
     telefono: Optional[str] = None
     consent: bool = False
-    # REPRESENTANTE_CAC
+    # REPRESENTANTE_CAC + COM_COMERCIALIZACION (compartidos)
     cac_id: Optional[str] = None
     cac_nombre: Optional[str] = None
     territorio: Optional[str] = None
-    # COM_COMERCIALIZACION
+    ruta: Optional[str] = None
+    # COM_COMERCIALIZACION (legacy, ya no se pide)
     rol_comision: Optional[str] = None
     # OFICINAS
     correo_institucional: Optional[str] = None
@@ -36,6 +37,7 @@ class UpdateProfileRequest(BaseModel):
     cac_id: Optional[str] = None
     cac_nombre: Optional[str] = None
     territorio: Optional[str] = None
+    ruta: Optional[str] = None
     rol_comision: Optional[str] = None
     correo_institucional: Optional[str] = None
     rol_interno: Optional[str] = None
@@ -62,6 +64,7 @@ class UserPublic(BaseModel):
     cac_id: Optional[str] = None
     cac_nombre: Optional[str] = None
     territorio: Optional[str] = None
+    ruta: Optional[str] = None
     rol_comision: Optional[str] = None
     correo_institucional: Optional[str] = None
     rol_interno: Optional[str] = None
