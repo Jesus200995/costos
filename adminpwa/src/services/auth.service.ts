@@ -39,5 +39,14 @@ export const authService = {
   async getUsuariosPWA(token: string): Promise<PWAUser[]> {
     const res = await api.get('/admin/usuarios-pwa', { params: { token } })
     return res.data
+  },
+
+  async updateUsuarioPWA(userId: string, data: Partial<PWAUser>, token: string): Promise<PWAUser> {
+    const res = await api.put(`/admin/usuarios-pwa/${userId}`, data, { params: { token } })
+    return res.data
+  },
+
+  async deleteUsuarioPWA(userId: string, token: string): Promise<void> {
+    await api.delete(`/admin/usuarios-pwa/${userId}`, { params: { token } })
   }
 }

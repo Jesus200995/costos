@@ -56,219 +56,308 @@
         </div>
       </div>
 
-      <header class="content-header">
-        <div></div>
-        <div class="header-stats">
-          <div class="stat-mini">
-            <span class="stat-mini__value">{{ filteredUsers.length }}</span>
-            <span class="stat-mini__label">Mostrados</span>
+      <!-- Stats + Search + Filters — unified card -->
+      <div class="toolbar-card">
+        <div class="toolbar-row toolbar-row--stats">
+          <div class="stat-pill">
+            <div class="stat-pill__icon stat-pill__icon--total"><Users :size="16" /></div>
+            <div class="stat-pill__data">
+              <span class="stat-pill__value">{{ usuarios.length }}</span>
+              <span class="stat-pill__label">Total</span>
+            </div>
           </div>
-          <div class="stat-mini stat-mini--primary">
-            <span class="stat-mini__value">{{ usuarios.length }}</span>
-            <span class="stat-mini__label">Total</span>
+          <div class="stat-pill">
+            <div class="stat-pill__icon stat-pill__icon--shown"><Filter :size="16" /></div>
+            <div class="stat-pill__data">
+              <span class="stat-pill__value">{{ filteredUsers.length }}</span>
+              <span class="stat-pill__label">Mostrados</span>
+            </div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-pill__icon stat-pill__icon--cac"><Building :size="16" /></div>
+            <div class="stat-pill__data">
+              <span class="stat-pill__value">{{ countByType('REPRESENTANTE_CAC') }}</span>
+              <span class="stat-pill__label">Rep. CAC</span>
+            </div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-pill__icon stat-pill__icon--com"><ShoppingCart :size="16" /></div>
+            <div class="stat-pill__data">
+              <span class="stat-pill__value">{{ countByType('COM_COMERCIALIZACION') }}</span>
+              <span class="stat-pill__label">Comercialización</span>
+            </div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-pill__icon stat-pill__icon--ofi"><Briefcase :size="16" /></div>
+            <div class="stat-pill__data">
+              <span class="stat-pill__value">{{ countByType('OFICINAS') }}</span>
+              <span class="stat-pill__label">Oficinas</span>
+            </div>
           </div>
         </div>
-      </header>
-
-      <!-- Search & Filters -->
-      <div class="filters-bar">
-        <div class="search-box">
-          <Search :size="18" class="search-icon" />
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Buscar por nombre, correo, CURP, teléfono..."
-            class="search-input"
-          />
-          <button v-if="searchQuery" class="search-clear" @click="searchQuery = ''">
-            <X :size="16" />
-          </button>
-        </div>
-        <div class="filter-group">
-          <select v-model="filterTipo" class="filter-select">
-            <option value="">Todos los tipos</option>
-            <option value="REPRESENTANTE_CAC">Representante CAC</option>
-            <option value="COM_COMERCIALIZACION">Com. Comercialización</option>
-            <option value="OFICINAS">Oficinas</option>
-          </select>
-          <select v-model="filterEstado" class="filter-select">
-            <option value="">Todos los estados</option>
-            <option v-for="edo in estadosUnicos" :key="edo" :value="edo">{{ edo }}</option>
-          </select>
+        <div class="toolbar-row toolbar-row--filters">
+          <div class="search-box">
+            <Search :size="18" class="search-box__icon" />
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Buscar nombre, correo, CURP, teléfono…"
+              class="search-box__input"
+            />
+            <Transition name="fade">
+              <button v-if="searchQuery" class="search-box__clear" @click="searchQuery = ''">
+                <X :size="14" />
+              </button>
+            </Transition>
+          </div>
+          <div class="filter-chips">
+            <div class="filter-chip">
+              <ListFilter :size="14" />
+              <select v-model="filterTipo">
+                <option value="">Todos los tipos</option>
+                <option value="REPRESENTANTE_CAC">Representante CAC</option>
+                <option value="COM_COMERCIALIZACION">Comercialización</option>
+                <option value="OFICINAS">Oficinas</option>
+              </select>
+            </div>
+            <div class="filter-chip">
+              <MapPin :size="14" />
+              <select v-model="filterEstado">
+                <option value="">Todos los estados</option>
+                <option v-for="edo in estadosUnicos" :key="edo" :value="edo">{{ edo }}</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Loading -->
-      <div v-if="loading" class="loading-state">
+      <div v-if="loading" class="state-empty">
         <div class="spinner"></div>
-        <p>Cargando usuarios...</p>
+        <p>Cargando usuarios…</p>
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="filteredUsers.length === 0" class="empty-state">
-        <Users :size="48" />
+      <div v-else-if="filteredUsers.length === 0" class="state-empty">
+        <Users :size="48" class="state-empty__icon" />
         <h3>No se encontraron usuarios</h3>
         <p v-if="searchQuery || filterTipo || filterEstado">Intenta con otros filtros de búsqueda</p>
         <p v-else>Aún no hay usuarios registrados en la PWA</p>
       </div>
 
       <!-- Users Table -->
-      <div v-else class="users-table-container">
-        <div class="table-container">
-          <table class="table">
+      <div v-else class="table-card">
+        <div class="table-scroll">
+          <table class="tbl">
             <thead>
               <tr>
-                <th @click="sortBy('name')" class="sortable">
+                <th @click="sortBy('name')" class="th-sort">
                   Nombre
-                  <ChevronDown v-if="sortField === 'name'" :size="14" :class="{ 'sort-asc': sortDir === 'asc' }" />
+                  <ChevronDown v-if="sortField === 'name'" :size="13" :class="{ 'sort-flip': sortDir === 'asc' }" />
                 </th>
-                <th class="hide-tablet">Correo</th>
-                <th class="hide-mobile">CURP</th>
-                <th class="hide-mobile">Teléfono</th>
+                <th class="hide-md">Correo</th>
+                <th class="hide-sm">CURP</th>
+                <th class="hide-sm">Teléfono</th>
                 <th>Tipo</th>
-                <th class="hide-tablet">Estado</th>
-                <th class="hide-mobile sortable" @click="sortBy('created_at')">
+                <th class="hide-md">Estado</th>
+                <th class="hide-sm th-sort" @click="sortBy('created_at')">
                   Registro
-                  <ChevronDown v-if="sortField === 'created_at'" :size="14" :class="{ 'sort-asc': sortDir === 'asc' }" />
+                  <ChevronDown v-if="sortField === 'created_at'" :size="13" :class="{ 'sort-flip': sortDir === 'asc' }" />
                 </th>
+                <th class="th-actions">Acciones</th>
               </tr>
             </thead>
-            <tbody>
-              <tr v-for="u in paginatedUsers" :key="u.id" @click="openDetail(u)" class="row-clickable">
+            <TransitionGroup name="list" tag="tbody">
+              <tr v-for="u in paginatedUsers" :key="u.id">
                 <td>
-                  <div class="user-cell">
-                    <div class="user-cell__avatar" :style="{ background: avatarColor(u.name) }">
+                  <div class="cell-user">
+                    <div class="cell-user__avatar" :style="{ background: avatarColor(u.name) }">
                       {{ getInitials(u.name) }}
                     </div>
-                    <div class="user-cell__info">
-                      <span class="user-cell__name">{{ u.name }}</span>
-                      <span class="user-cell__sub hide-desktop">{{ u.email }}</span>
+                    <div class="cell-user__text">
+                      <span class="cell-user__name">{{ u.name }}</span>
+                      <span class="cell-user__sub show-sm">{{ u.email }}</span>
                     </div>
                   </div>
                 </td>
-                <td class="hide-tablet text-ellipsis">{{ u.email }}</td>
-                <td class="hide-mobile mono">{{ u.curp || '—' }}</td>
-                <td class="hide-mobile">{{ u.telefono || '—' }}</td>
+                <td class="hide-md td-ellipsis">{{ u.email }}</td>
+                <td class="hide-sm mono">{{ u.curp || '—' }}</td>
+                <td class="hide-sm">{{ u.telefono || '—' }}</td>
                 <td>
-                  <span class="badge" :class="badgeClass(u.tipo_capturista)">
+                  <span class="chip" :class="chipClass(u.tipo_capturista)">
                     {{ tipoLabel(u.tipo_capturista) }}
                   </span>
                 </td>
-                <td class="hide-tablet">{{ u.estado || '—' }}</td>
-                <td class="hide-mobile">{{ formatDate(u.created_at) }}</td>
+                <td class="hide-md">{{ u.estado || '—' }}</td>
+                <td class="hide-sm">{{ formatDate(u.created_at) }}</td>
+                <td class="td-actions">
+                  <button class="act-btn act-btn--view" title="Ver detalle" @click="openDetail(u)">
+                    <Eye :size="15" />
+                  </button>
+                  <button class="act-btn act-btn--edit" title="Editar" @click="openEdit(u)">
+                    <Pencil :size="15" />
+                  </button>
+                  <button class="act-btn act-btn--del" title="Eliminar" @click="openDelete(u)">
+                    <Trash2 :size="15" />
+                  </button>
+                </td>
               </tr>
-            </tbody>
+            </TransitionGroup>
           </table>
         </div>
 
         <!-- Pagination -->
-        <div v-if="totalPages > 1" class="pagination">
-          <button class="page-btn" :disabled="currentPage === 1" @click="currentPage--">
+        <div v-if="totalPages > 1" class="pager">
+          <button class="pager__btn" :disabled="currentPage === 1" @click="currentPage--">
             <ChevronLeft :size="16" />
           </button>
           <template v-for="p in visiblePages" :key="p">
             <button
               v-if="p !== '...'"
-              class="page-btn" :class="{ active: currentPage === p }"
+              class="pager__btn" :class="{ 'pager__btn--active': currentPage === p }"
               @click="currentPage = p as number"
             >{{ p }}</button>
-            <span v-else class="page-dots">...</span>
+            <span v-else class="pager__dots">…</span>
           </template>
-          <button class="page-btn" :disabled="currentPage === totalPages" @click="currentPage++">
+          <button class="pager__btn" :disabled="currentPage === totalPages" @click="currentPage++">
             <ChevronRight :size="16" />
           </button>
-          <span class="page-info">{{ currentPage }} de {{ totalPages }}</span>
+          <span class="pager__info">{{ currentPage }} / {{ totalPages }}</span>
         </div>
       </div>
 
-      <!-- Detail Modal -->
-      <div v-if="selectedUser" class="modal-overlay" @click="selectedUser = null">
-        <div class="modal modal--lg" @click.stop>
-          <div class="modal-header">
-            <div class="modal-user-header">
-              <div class="modal-avatar" :style="{ background: avatarColor(selectedUser.name) }">
-                {{ getInitials(selectedUser.name) }}
+      <!-- ═══════ Detail Modal ═══════ -->
+      <Transition name="modal">
+        <div v-if="selectedUser" class="overlay" @click="selectedUser = null">
+          <div class="sheet sheet--lg" @click.stop>
+            <div class="sheet__head">
+              <div class="sheet__user">
+                <div class="sheet__avatar" :style="{ background: avatarColor(selectedUser.name) }">
+                  {{ getInitials(selectedUser.name) }}
+                </div>
+                <div>
+                  <h3>{{ selectedUser.name }}</h3>
+                  <p class="sheet__sub">{{ tipoLabel(selectedUser.tipo_capturista) }}</p>
+                </div>
               </div>
-              <div>
-                <h3>{{ selectedUser.name }}</h3>
-                <p class="modal-subtitle">{{ tipoLabel(selectedUser.tipo_capturista) }}</p>
-              </div>
+              <button class="sheet__close" @click="selectedUser = null"><X :size="20" /></button>
             </div>
-            <button class="modal-close" @click="selectedUser = null">
-              <X :size="20" />
-            </button>
-          </div>
-          <div class="modal-body">
-            <div class="detail-grid">
-              <div class="detail-item">
-                <label>Correo electrónico</label>
-                <span>{{ selectedUser.email }}</span>
-              </div>
-              <div class="detail-item">
-                <label>CURP</label>
-                <span class="mono">{{ selectedUser.curp || '—' }}</span>
-              </div>
-              <div class="detail-item">
-                <label>Teléfono</label>
-                <span>{{ selectedUser.telefono || '—' }}</span>
-              </div>
-              <div class="detail-item">
-                <label>Tipo de capturista</label>
-                <span>{{ tipoLabel(selectedUser.tipo_capturista) }}</span>
-              </div>
-              <div class="detail-item">
-                <label>Estado</label>
-                <span>{{ selectedUser.estado || '—' }}</span>
-              </div>
-              <div class="detail-item">
-                <label>Municipio</label>
-                <span>{{ selectedUser.municipio || '—' }}</span>
-              </div>
-              <div class="detail-item">
-                <label>Localidad</label>
-                <span>{{ selectedUser.localidad || '—' }}</span>
-              </div>
-              <div class="detail-item">
-                <label>Territorio</label>
-                <span>{{ selectedUser.territorio || '—' }}</span>
-              </div>
-              <div class="detail-item">
-                <label>Ruta</label>
-                <span>{{ selectedUser.ruta || '—' }}</span>
-              </div>
-              <div class="detail-item">
-                <label>CAC ID</label>
-                <span class="mono">{{ selectedUser.cac_id || '—' }}</span>
-              </div>
-              <div class="detail-item">
-                <label>CAC Nombre</label>
-                <span>{{ selectedUser.cac_nombre || '—' }}</span>
-              </div>
-              <div class="detail-item">
-                <label>Rol comisión</label>
-                <span>{{ selectedUser.rol_comision || '—' }}</span>
-              </div>
-              <div class="detail-item">
-                <label>Correo institucional</label>
-                <span>{{ selectedUser.correo_institucional || '—' }}</span>
-              </div>
-              <div class="detail-item">
-                <label>Rol interno</label>
-                <span>{{ selectedUser.rol_interno || '—' }}</span>
-              </div>
-              <div class="detail-item">
-                <label>Fecha de registro</label>
-                <span>{{ formatDateFull(selectedUser.created_at) }}</span>
+            <div class="sheet__body">
+              <div class="info-grid">
+                <div class="info-cell"><label>Correo electrónico</label><span>{{ selectedUser.email }}</span></div>
+                <div class="info-cell"><label>CURP</label><span class="mono">{{ selectedUser.curp || '—' }}</span></div>
+                <div class="info-cell"><label>Teléfono</label><span>{{ selectedUser.telefono || '—' }}</span></div>
+                <div class="info-cell"><label>Tipo de capturista</label><span>{{ tipoLabel(selectedUser.tipo_capturista) }}</span></div>
+                <div class="info-cell"><label>Estado</label><span>{{ selectedUser.estado || '—' }}</span></div>
+                <div class="info-cell"><label>Municipio</label><span>{{ selectedUser.municipio || '—' }}</span></div>
+                <div class="info-cell"><label>Localidad</label><span>{{ selectedUser.localidad || '—' }}</span></div>
+                <div class="info-cell"><label>Territorio</label><span>{{ selectedUser.territorio || '—' }}</span></div>
+                <div class="info-cell"><label>Ruta</label><span>{{ selectedUser.ruta || '—' }}</span></div>
+                <div class="info-cell"><label>CAC ID</label><span class="mono">{{ selectedUser.cac_id || '—' }}</span></div>
+                <div class="info-cell"><label>CAC Nombre</label><span>{{ selectedUser.cac_nombre || '—' }}</span></div>
+                <div class="info-cell"><label>Correo institucional</label><span>{{ selectedUser.correo_institucional || '—' }}</span></div>
+                <div class="info-cell"><label>Rol interno</label><span>{{ selectedUser.rol_interno || '—' }}</span></div>
+                <div class="info-cell"><label>Fecha de registro</label><span>{{ formatDateFull(selectedUser.created_at) }}</span></div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </Transition>
+
+      <!-- ═══════ Edit Modal ═══════ -->
+      <Transition name="modal">
+        <div v-if="editUser" class="overlay" @click="editUser = null">
+          <div class="sheet sheet--lg" @click.stop>
+            <div class="sheet__head">
+              <div class="sheet__user">
+                <div class="sheet__avatar sheet__avatar--edit">
+                  <Pencil :size="20" />
+                </div>
+                <div>
+                  <h3>Editar usuario</h3>
+                  <p class="sheet__sub">{{ editForm.name }}</p>
+                </div>
+              </div>
+              <button class="sheet__close" @click="editUser = null"><X :size="20" /></button>
+            </div>
+            <form class="sheet__body" @submit.prevent="submitEdit">
+              <div class="edit-grid">
+                <div class="fg"><label>Nombre completo</label><input v-model="editForm.name" class="fi" /></div>
+                <div class="fg"><label>Correo</label><input v-model="editForm.email" type="email" class="fi" /></div>
+                <div class="fg"><label>CURP</label><input v-model="editForm.curp" class="fi" maxlength="18" /></div>
+                <div class="fg"><label>Teléfono</label><input v-model="editForm.telefono" class="fi" maxlength="10" /></div>
+                <div class="fg">
+                  <label>Tipo de capturista</label>
+                  <select v-model="editForm.tipo_capturista" class="fi">
+                    <option value="REPRESENTANTE_CAC">Representante CAC</option>
+                    <option value="COM_COMERCIALIZACION">Comercialización</option>
+                    <option value="OFICINAS">Oficinas</option>
+                  </select>
+                </div>
+                <div class="fg"><label>Estado</label><input v-model="editForm.estado" class="fi" /></div>
+                <div class="fg"><label>Localidad</label><input v-model="editForm.localidad" class="fi" /></div>
+                <div class="fg"><label>Territorio</label><input v-model="editForm.territorio" class="fi" /></div>
+                <div class="fg"><label>Ruta</label><input v-model="editForm.ruta" class="fi" /></div>
+                <div class="fg"><label>CAC ID</label><input v-model="editForm.cac_id" class="fi" /></div>
+                <div class="fg"><label>CAC Nombre</label><input v-model="editForm.cac_nombre" class="fi" /></div>
+                <div class="fg"><label>Correo institucional</label><input v-model="editForm.correo_institucional" class="fi" /></div>
+                <div class="fg"><label>Rol interno</label><input v-model="editForm.rol_interno" class="fi" /></div>
+              </div>
+              <div class="sheet__actions">
+                <button type="button" class="btn-cancel" @click="editUser = null">Cancelar</button>
+                <button type="submit" class="btn-save" :disabled="saving">
+                  <Loader2 v-if="saving" :size="16" class="spin" />
+                  <Save v-else :size="16" />
+                  {{ saving ? 'Guardando…' : 'Guardar cambios' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </Transition>
+
+      <!-- ═══════ Delete Modal ═══════ -->
+      <Transition name="modal">
+        <div v-if="deleteTarget" class="overlay" @click="deleteTarget = null">
+          <div class="sheet sheet--sm" @click.stop>
+            <div class="sheet__head sheet__head--danger">
+              <div class="sheet__user">
+                <div class="sheet__avatar sheet__avatar--danger">
+                  <AlertTriangle :size="22" />
+                </div>
+                <div>
+                  <h3>Eliminar usuario</h3>
+                  <p class="sheet__sub">Esta acción no se puede deshacer</p>
+                </div>
+              </div>
+              <button class="sheet__close" @click="deleteTarget = null"><X :size="20" /></button>
+            </div>
+            <div class="sheet__body sheet__body--center">
+              <p class="del-msg">
+                ¿Estás seguro de eliminar a <strong>{{ deleteTarget.name }}</strong>?<br />
+                Se eliminará toda su información permanentemente.
+              </p>
+            </div>
+            <div class="sheet__actions sheet__actions--danger">
+              <button class="btn-cancel" @click="deleteTarget = null">Cancelar</button>
+              <button class="btn-del" :disabled="deleting" @click="submitDelete">
+                <Loader2 v-if="deleting" :size="16" class="spin" />
+                <Trash2 v-else :size="16" />
+                {{ deleting ? 'Eliminando…' : 'Eliminar usuario' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
 
       <!-- Toast -->
-      <div v-if="toast.show" class="toast" :class="`toast--${toast.type}`">
-        {{ toast.message }}
-      </div>
+      <Transition name="toast">
+        <div v-if="toast.show" class="toast" :class="`toast--${toast.type}`">
+          <CheckCircle v-if="toast.type === 'success'" :size="18" />
+          <AlertTriangle v-else :size="18" />
+          {{ toast.message }}
+        </div>
+      </Transition>
     </main>
   </div>
 </template>
@@ -280,8 +369,10 @@ import { useAuthStore } from '@/stores/auth'
 import { authService } from '@/services/auth.service'
 import type { PWAUser } from '@/types'
 import {
-  Shield, LayoutDashboard, Users, LogOut, Search, X,
-  ChevronDown, ChevronLeft, ChevronRight, Layers
+  LayoutDashboard, Users, LogOut, Search, X,
+  ChevronDown, ChevronLeft, ChevronRight, Layers,
+  Filter, ListFilter, MapPin, Building, ShoppingCart, Briefcase,
+  Eye, Pencil, Trash2, Save, Loader2, AlertTriangle, CheckCircle
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -296,7 +387,29 @@ const sortField = ref<'name' | 'created_at'>('created_at')
 const sortDir = ref<'asc' | 'desc'>('desc')
 const currentPage = ref(1)
 const perPage = 15
+
+// modals
 const selectedUser = ref<PWAUser | null>(null)
+const editUser = ref<PWAUser | null>(null)
+const deleteTarget = ref<PWAUser | null>(null)
+const saving = ref(false)
+const deleting = ref(false)
+
+const editForm = reactive({
+  name: '',
+  email: '',
+  curp: '',
+  telefono: '',
+  tipo_capturista: '',
+  estado: '',
+  localidad: '',
+  territorio: '',
+  ruta: '',
+  cac_id: '',
+  cac_nombre: '',
+  correo_institucional: '',
+  rol_interno: '',
+})
 
 const toast = reactive({
   show: false,
@@ -316,9 +429,12 @@ const estadosUnicos = computed(() => {
   return Array.from(edos).sort()
 })
 
+function countByType(tipo: string) {
+  return usuarios.value.filter(u => u.tipo_capturista === tipo).length
+}
+
 const filteredUsers = computed(() => {
   let result = [...usuarios.value]
-
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase()
     result = result.filter(u =>
@@ -330,22 +446,14 @@ const filteredUsers = computed(() => {
       u.territorio?.toLowerCase().includes(q)
     )
   }
-
-  if (filterTipo.value) {
-    result = result.filter(u => u.tipo_capturista === filterTipo.value)
-  }
-
-  if (filterEstado.value) {
-    result = result.filter(u => u.estado === filterEstado.value)
-  }
-
+  if (filterTipo.value) result = result.filter(u => u.tipo_capturista === filterTipo.value)
+  if (filterEstado.value) result = result.filter(u => u.estado === filterEstado.value)
   result.sort((a, b) => {
     const aVal = a[sortField.value] || ''
     const bVal = b[sortField.value] || ''
     const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0
     return sortDir.value === 'asc' ? cmp : -cmp
   })
-
   return result
 })
 
@@ -360,9 +468,8 @@ const visiblePages = computed(() => {
   const pages: (number | string)[] = []
   const t = totalPages.value
   const c = currentPage.value
-  if (t <= 7) {
-    for (let i = 1; i <= t; i++) pages.push(i)
-  } else {
+  if (t <= 7) { for (let i = 1; i <= t; i++) pages.push(i) }
+  else {
     pages.push(1)
     if (c > 3) pages.push('...')
     for (let i = Math.max(2, c - 1); i <= Math.min(t - 1, c + 1); i++) pages.push(i)
@@ -372,82 +479,134 @@ const visiblePages = computed(() => {
   return pages
 })
 
-watch([searchQuery, filterTipo, filterEstado], () => {
-  currentPage.value = 1
-})
+watch([searchQuery, filterTipo, filterEstado], () => { currentPage.value = 1 })
 
 function sortBy(field: 'name' | 'created_at') {
-  if (sortField.value === field) {
-    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortField.value = field
-    sortDir.value = 'asc'
-  }
+  if (sortField.value === field) sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  else { sortField.value = field; sortDir.value = 'asc' }
 }
 
-function getInitials(name: string): string {
+function getInitials(name: string) {
   if (!name) return '?'
-  const parts = name.trim().split(/\s+/)
-  return (parts[0]?.charAt(0) || '' + (parts[1]?.charAt(0) || '')).toUpperCase().slice(0, 2)
+  const p = name.trim().split(/\s+/)
+  return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase().slice(0, 2)
 }
 
-function avatarColor(name: string): string {
+function avatarColor(name: string) {
   const colors = [
-    'linear-gradient(135deg, #1b5e20, #2e7d32)',
-    'linear-gradient(135deg, #1565c0, #1976d2)',
-    'linear-gradient(135deg, #2e7d32, #388e3c)',
-    'linear-gradient(135deg, #6a1b9a, #7b1fa2)',
-    'linear-gradient(135deg, #c62828, #d32f2f)',
-    'linear-gradient(135deg, #00838f, #0097a7)',
-    'linear-gradient(135deg, #4527a0, #512da8)',
-    'linear-gradient(135deg, #ad1457, #c2185b)',
+    'linear-gradient(135deg,#4f46e5,#6366f1)',
+    'linear-gradient(135deg,#0891b2,#06b6d4)',
+    'linear-gradient(135deg,#7c3aed,#8b5cf6)',
+    'linear-gradient(135deg,#db2777,#ec4899)',
+    'linear-gradient(135deg,#059669,#10b981)',
+    'linear-gradient(135deg,#d97706,#f59e0b)',
+    'linear-gradient(135deg,#dc2626,#ef4444)',
+    'linear-gradient(135deg,#2563eb,#3b82f6)',
   ]
-  let hash = 0
-  for (let i = 0; i < (name || '').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  return colors[Math.abs(hash) % colors.length]
+  let h = 0
+  for (let i = 0; i < (name || '').length; i++) h = name.charCodeAt(i) + ((h << 5) - h)
+  return colors[Math.abs(h) % colors.length]
 }
 
-function tipoLabel(tipo: string | null): string {
-  const map: Record<string, string> = {
-    'REPRESENTANTE_CAC': 'Rep. CAC',
-    'COM_COMERCIALIZACION': 'Com. Comercialización',
-    'OFICINAS': 'Oficinas',
+function tipoLabel(tipo: string | null) {
+  const m: Record<string, string> = {
+    REPRESENTANTE_CAC: 'Rep. CAC',
+    COM_COMERCIALIZACION: 'Comercialización',
+    OFICINAS: 'Oficinas',
   }
-  return tipo ? (map[tipo] || tipo) : '—'
+  return tipo ? m[tipo] || tipo : '—'
 }
 
-function badgeClass(tipo: string | null): string {
-  const map: Record<string, string> = {
-    'REPRESENTANTE_CAC': 'badge--orange',
-    'COM_COMERCIALIZACION': 'badge--blue',
-    'OFICINAS': 'badge--green',
+function chipClass(tipo: string | null) {
+  const m: Record<string, string> = {
+    REPRESENTANTE_CAC: 'chip--amber',
+    COM_COMERCIALIZACION: 'chip--indigo',
+    OFICINAS: 'chip--emerald',
   }
-  return tipo ? (map[tipo] || 'badge--default') : 'badge--default'
+  return tipo ? m[tipo] || '' : ''
 }
 
-function formatDate(iso: string): string {
+function formatDate(iso: string) {
   if (!iso) return '—'
-  const d = new Date(iso)
-  return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function formatDateFull(iso: string): string {
+function formatDateFull(iso: string) {
   if (!iso) return '—'
-  const d = new Date(iso)
-  return d.toLocaleDateString('es-MX', {
-    day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
-  })
+  return new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-function openDetail(u: PWAUser) {
-  selectedUser.value = u
+function openDetail(u: PWAUser) { selectedUser.value = u }
+
+function openEdit(u: PWAUser) {
+  editUser.value = u
+  editForm.name = u.name || ''
+  editForm.email = u.email || ''
+  editForm.curp = u.curp || ''
+  editForm.telefono = u.telefono || ''
+  editForm.tipo_capturista = u.tipo_capturista || ''
+  editForm.estado = u.estado || ''
+  editForm.localidad = u.localidad || ''
+  editForm.territorio = u.territorio || ''
+  editForm.ruta = u.ruta || ''
+  editForm.cac_id = u.cac_id || ''
+  editForm.cac_nombre = u.cac_nombre || ''
+  editForm.correo_institucional = u.correo_institucional || ''
+  editForm.rol_interno = u.rol_interno || ''
+}
+
+function openDelete(u: PWAUser) { deleteTarget.value = u }
+
+async function submitEdit() {
+  if (!editUser.value) return
+  saving.value = true
+  try {
+    const updated = await authService.updateUsuarioPWA(editUser.value.id, {
+      name: editForm.name || null,
+      email: editForm.email || null,
+      curp: editForm.curp || null,
+      tipo_capturista: editForm.tipo_capturista || null,
+      estado: editForm.estado || null,
+      localidad: editForm.localidad || null,
+      telefono: editForm.telefono || null,
+      territorio: editForm.territorio || null,
+      ruta: editForm.ruta || null,
+      cac_id: editForm.cac_id || null,
+      cac_nombre: editForm.cac_nombre || null,
+      correo_institucional: editForm.correo_institucional || null,
+      rol_interno: editForm.rol_interno || null,
+    } as Partial<PWAUser>, auth.token!)
+    const idx = usuarios.value.findIndex(x => x.id === editUser.value!.id)
+    if (idx !== -1) usuarios.value[idx] = updated
+    editUser.value = null
+    showToast('Usuario actualizado correctamente')
+  } catch (e: any) {
+    showToast(e.response?.data?.detail || 'Error al actualizar', 'error')
+  } finally {
+    saving.value = false
+  }
+}
+
+async function submitDelete() {
+  if (!deleteTarget.value) return
+  deleting.value = true
+  try {
+    await authService.deleteUsuarioPWA(deleteTarget.value.id, auth.token!)
+    usuarios.value = usuarios.value.filter(x => x.id !== deleteTarget.value!.id)
+    deleteTarget.value = null
+    showToast('Usuario eliminado correctamente')
+  } catch (e: any) {
+    showToast(e.response?.data?.detail || 'Error al eliminar', 'error')
+  } finally {
+    deleting.value = false
+  }
 }
 
 function showToast(message: string, type: 'success' | 'error' = 'success') {
   toast.message = message
   toast.type = type
   toast.show = true
-  setTimeout(() => { toast.show = false }, 3000)
+  setTimeout(() => { toast.show = false }, 3500)
 }
 
 async function loadUsuarios() {
@@ -466,825 +625,378 @@ function handleLogout() {
   router.push('/login')
 }
 
-onMounted(() => {
-  loadUsuarios()
-})
+onMounted(() => { loadUsuarios() })
 </script>
 
 <style scoped>
-.dashboard-layout {
-  display: flex;
-  min-height: 100vh;
-}
+/* ═══════════════════════════════════════════
+   Layout
+   ═══════════════════════════════════════════ */
+.dashboard-layout { display: flex; min-height: 100vh; }
 
 /* ── Sidebar ── */
 .sidebar {
   width: 260px;
   background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-  border-right: none;
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-  height: 100vh;
-  z-index: 100;
+  display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 100;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
   box-shadow: 4px 0 24px rgba(15, 23, 42, 0.35);
 }
 
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1.25rem 1.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
-  color: #fff;
-}
+.sidebar-header { display: flex; align-items: center; gap: 0.75rem; padding: 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.1); color: #fff; }
+.sidebar-logo { width: 44px; height: 44px; background: linear-gradient(135deg,#4f46e5,#6366f1); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sidebar-brand { display: flex; flex-direction: column; line-height: 1.15; }
+.sidebar-brand__title { font-weight: 800; font-size: 1.15rem; letter-spacing: 0.04em; }
+.sidebar-brand__sub { font-size: 0.68rem; font-weight: 500; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.02em; }
 
-.sidebar-logo {
-  width: 44px;
-  height: 44px;
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
+.sidebar-nav { flex: 1; padding: 0.75rem 0.65rem; }
+.sidebar-nav-label { font-size: 0.7rem; font-weight: 600; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.05em; padding: 0.5rem 0.85rem 0.35rem; }
 
-.sidebar-brand {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.15;
-}
+.nav-item { display: flex; align-items: center; gap: 0.65rem; padding: 0.55rem 0.85rem; border-radius: 8px; color: rgba(255,255,255,0.75); text-decoration: none; font-weight: 500; font-size: 0.88rem; transition: all 0.2s cubic-bezier(.4,0,.2,1); margin-bottom: 2px; }
+.nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.nav-item.active { background: rgba(99,102,241,0.25); color: #fff; font-weight: 600; }
 
-.sidebar-brand__title {
-  font-weight: 800;
-  font-size: 1.15rem;
-  letter-spacing: 0.04em;
-}
-
-.sidebar-brand__sub {
-  font-size: 0.68rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.7);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.sidebar-nav {
-  flex: 1;
-  padding: 0.75rem 0.65rem;
-}
-
-.sidebar-nav-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.55);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.5rem 0.85rem 0.35rem;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  padding: 0.55rem 0.85rem;
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.85);
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 0.88rem;
-  transition: all 0.15s ease;
-  margin-bottom: 2px;
-  letter-spacing: -0.01em;
-}
-
-.nav-item:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-}
-
-.nav-item.active {
-  background: rgba(99, 102, 241, 0.25);
-  color: #fff;
-  font-weight: 600;
-}
-
-.sidebar-footer {
-  padding: 0.85rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-}
-
-.user-avatar {
-  width: 34px;
-  height: 34px;
-  background: rgba(255, 255, 255, 0.25);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-weight: 600;
-  font-size: 0.78rem;
-  letter-spacing: 0.02em;
-}
-
-.user-details {
-  display: flex;
-  flex-direction: column;
-}
-
-.user-name {
-  font-weight: 600;
-  font-size: 0.82rem;
-  color: #fff;
-  letter-spacing: -0.01em;
-}
-
-.user-role {
-  font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.6);
-  text-transform: capitalize;
-}
-
-.btn-logout {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.6);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.btn-logout:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-}
+.sidebar-footer { padding: 0.85rem; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between; }
+.user-info { display: flex; align-items: center; gap: 0.65rem; }
+.user-avatar { width: 34px; height: 34px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: 0.78rem; }
+.user-details { display: flex; flex-direction: column; }
+.user-name { font-weight: 600; font-size: 0.82rem; color: #fff; }
+.user-role { font-size: 0.7rem; color: rgba(255,255,255,0.5); text-transform: capitalize; }
+.btn-logout { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: none; border-radius: 8px; background: transparent; color: rgba(255,255,255,0.5); cursor: pointer; transition: all 0.15s; }
+.btn-logout:hover { background: rgba(255,255,255,0.1); color: #fff; }
 
 /* ── Main Content ── */
-.main-content {
-  flex: 1;
-  margin-left: 260px;
-  padding: 0.75rem 2rem 2rem;
-  background: #f5f5f5;
-  min-height: 100vh;
-}
+.main-content { flex: 1; margin-left: 260px; padding: 0.75rem 2rem 2rem; background: #f8fafc; min-height: 100vh; }
 
 /* ── Top Bar ── */
-.top-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
-  border-radius: 14px;
-  padding: 1.15rem 1.5rem;
+.top-bar { display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg,#4f46e5,#6366f1); border-radius: 14px; padding: 1.15rem 1.5rem; margin-bottom: 1.25rem; box-shadow: 0 4px 20px rgba(79,70,229,0.18); }
+.top-bar__title { font-size: 1.35rem; font-weight: 700; color: #fff; margin: 0; display: flex; align-items: center; gap: 0.5rem; }
+.top-bar__desc { font-size: 0.85rem; color: rgba(255,255,255,0.75); margin: 0.15rem 0 0; }
+
+/* ═══════════════════════════════════════════
+   Toolbar Card — Stats + Search + Filters
+   ═══════════════════════════════════════════ */
+.toolbar-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
   margin-bottom: 1.25rem;
-  box-shadow: 0 2px 12px rgba(79, 70, 229, 0.2);
+  overflow: hidden;
 }
 
-.top-bar__title {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: #fff;
-  margin: 0;
+.toolbar-row { padding: 1rem 1.25rem; }
+
+.toolbar-row--stats {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fafbfd;
+}
+
+.stat-pill {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  transition: all 0.25s cubic-bezier(.4,0,.2,1);
+  flex: 1;
+  min-width: 120px;
 }
 
-.top-bar__desc {
-  font-size: 0.88rem;
-  color: rgba(255, 255, 255, 0.8);
-  margin: 0.15rem 0 0;
+.stat-pill:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  border-color: #cbd5e1;
 }
 
-.content-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-  gap: 1rem;
+.stat-pill__icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
+.stat-pill__icon--total { background: #ede9fe; color: #7c3aed; }
+.stat-pill__icon--shown { background: #e0f2fe; color: #0284c7; }
+.stat-pill__icon--cac { background: #fef3c7; color: #d97706; }
+.stat-pill__icon--com { background: #eef2ff; color: #4f46e5; }
+.stat-pill__icon--ofi { background: #d1fae5; color: #059669; }
 
-.header-stats {
+.stat-pill__data { display: flex; flex-direction: column; line-height: 1.2; }
+.stat-pill__value { font-size: 1.1rem; font-weight: 700; color: #1e293b; }
+.stat-pill__label { font-size: 0.7rem; color: #94a3b8; font-weight: 500; }
+
+.toolbar-row--filters {
   display: flex;
   gap: 0.75rem;
-}
-
-.stat-mini {
-  background: #fff;
-  border-radius: 10px;
-  padding: 0.65rem 1rem;
-  text-align: center;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-}
-
-.stat-mini--primary {
-  border-left: 3px solid #1b5e20;
-}
-
-.stat-mini__value {
-  display: block;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #333;
-}
-
-.stat-mini__label {
-  font-size: 0.75rem;
-  color: #888;
-}
-
-/* ── Filters ── */
-.filters-bar {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  align-items: center;
   flex-wrap: wrap;
 }
 
 .search-box {
   flex: 1;
-  min-width: 280px;
+  min-width: 240px;
   position: relative;
 }
+.search-box__icon { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; }
+.search-box__input {
+  width: 100%; padding: 0.65rem 2.2rem 0.65rem 2.7rem; border: 1.5px solid #e2e8f0; border-radius: 10px;
+  font-size: 0.88rem; background: #f8fafc; transition: all 0.25s cubic-bezier(.4,0,.2,1); box-sizing: border-box;
+}
+.search-box__input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); background: #fff; }
+.search-box__input::placeholder { color: #94a3b8; }
+.search-box__clear { position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%); background: #e2e8f0; border: none; color: #64748b; cursor: pointer; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.search-box__clear:hover { background: #cbd5e1; color: #334155; }
 
-.search-icon {
-  position: absolute;
-  left: 0.85rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #999;
-  pointer-events: none;
+.filter-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.filter-chip {
+  display: flex; align-items: center; gap: 0.35rem; padding: 0 0.1rem 0 0.7rem;
+  border: 1.5px solid #e2e8f0; border-radius: 10px; background: #f8fafc; color: #64748b;
+  transition: all 0.25s cubic-bezier(.4,0,.2,1); cursor: pointer;
+}
+.filter-chip:hover { border-color: #6366f1; }
+.filter-chip select {
+  border: none; background: transparent; font-size: 0.84rem; color: #334155; cursor: pointer;
+  padding: 0.6rem 0.5rem; outline: none; -webkit-appearance: none; appearance: none;
+  min-width: 130px;
 }
 
-.search-input {
-  width: 100%;
-  padding: 0.7rem 2.5rem 0.7rem 2.75rem;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 10px;
-  font-size: 0.9rem;
-  background: #fff;
-  transition: border-color 0.2s;
-  box-sizing: border-box;
-}
+/* ═══════════════════════════════════════════
+   States
+   ═══════════════════════════════════════════ */
+.state-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; color: #94a3b8; text-align: center; }
+.state-empty__icon { color: #cbd5e1; }
+.state-empty h3 { margin: 1rem 0 0.25rem; color: #475569; font-size: 1.15rem; }
+.state-empty p { margin: 0; font-size: 0.88rem; }
+.spinner { width: 36px; height: 36px; border: 3px solid #e2e8f0; border-top-color: #6366f1; border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 1rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.search-input:focus {
-  outline: none;
-  border-color: #1b5e20;
-  box-shadow: 0 0 0 3px rgba(191, 54, 12, 0.08);
-}
-
-.search-input::placeholder {
-  color: #bbb;
-}
-
-.search-clear {
-  position: absolute;
-  right: 0.6rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: #999;
-  cursor: pointer;
-  padding: 0.2rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.search-clear:hover {
-  background: #f0f0f0;
-  color: #666;
-}
-
-.filter-group {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.filter-select {
-  padding: 0.7rem 0.85rem;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 10px;
-  font-size: 0.85rem;
-  background: #fff;
-  cursor: pointer;
-  color: #555;
-  transition: border-color 0.2s;
-}
-
-.filter-select:focus {
-  outline: none;
-  border-color: #1b5e20;
-}
-
-/* ── Loading ── */
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem;
-  color: #888;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #e0e0e0;
-  border-top-color: #1b5e20;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-bottom: 1rem;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* ── Empty State ── */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  color: #999;
-  text-align: center;
-}
-
-.empty-state h3 {
-  margin: 1rem 0 0.25rem;
-  color: #666;
-  font-size: 1.2rem;
-}
-
-.empty-state p {
-  margin: 0;
-  font-size: 0.9rem;
-}
-
-/* ── Table ── */
-.users-table-container {
+/* ═══════════════════════════════════════════
+   Table
+   ═══════════════════════════════════════════ */
+.table-card {
   background: #fff;
   border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
   overflow: hidden;
 }
+.table-scroll { overflow-x: auto; }
 
-.table-container {
-  overflow-x: auto;
+.tbl { width: 100%; border-collapse: collapse; }
+.tbl thead { background: #f8fafc; border-bottom: 1.5px solid #e2e8f0; }
+.tbl th { padding: 0.75rem 1rem; text-align: left; font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; white-space: nowrap; user-select: none; }
+.th-sort { cursor: pointer; transition: color 0.15s; }
+.th-sort:hover { color: #4f46e5; }
+.th-actions { text-align: center; width: 120px; }
+.sort-flip { display: inline-block; transform: rotate(180deg); transition: transform 0.2s; }
+
+.tbl td { padding: 0.65rem 1rem; border-bottom: 1px solid #f1f5f9; font-size: 0.86rem; color: #334155; vertical-align: middle; }
+.tbl tbody tr { transition: background 0.2s cubic-bezier(.4,0,.2,1); }
+.tbl tbody tr:hover { background: #f8fafc; }
+
+.cell-user { display: flex; align-items: center; gap: 0.7rem; }
+.cell-user__avatar { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 0.75rem; flex-shrink: 0; }
+.cell-user__text { display: flex; flex-direction: column; }
+.cell-user__name { font-weight: 600; color: #1e293b; font-size: 0.86rem; }
+.cell-user__sub { font-size: 0.75rem; color: #94a3b8; display: none; }
+.show-sm { display: none; }
+
+.td-ellipsis { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mono { font-family: 'SF Mono','Fira Code','Consolas',monospace; font-size: 0.8rem; letter-spacing: 0.02em; }
+
+/* Chips / badges */
+.chip { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.7rem; font-weight: 600; white-space: nowrap; }
+.chip--amber { background: #fef3c7; color: #92400e; }
+.chip--indigo { background: #eef2ff; color: #3730a3; }
+.chip--emerald { background: #d1fae5; color: #065f46; }
+
+/* Action buttons in table */
+.td-actions { text-align: center; white-space: nowrap; }
+.act-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border: none; border-radius: 8px; cursor: pointer;
+  transition: all 0.2s cubic-bezier(.4,0,.2,1); margin: 0 2px;
+}
+.act-btn--view { background: #f1f5f9; color: #475569; }
+.act-btn--view:hover { background: #e2e8f0; color: #1e293b; }
+.act-btn--edit { background: #eef2ff; color: #4f46e5; }
+.act-btn--edit:hover { background: #c7d2fe; color: #3730a3; transform: scale(1.08); }
+.act-btn--del { background: #fef2f2; color: #dc2626; }
+.act-btn--del:hover { background: #fecaca; color: #991b1b; transform: scale(1.08); }
+
+/* ═══════════════════════════════════════════
+   Pagination
+   ═══════════════════════════════════════════ */
+.pager { display: flex; align-items: center; justify-content: center; gap: 0.25rem; padding: 0.85rem 1rem; border-top: 1px solid #f1f5f9; }
+.pager__btn { display: flex; align-items: center; justify-content: center; min-width: 34px; height: 34px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; color: #475569; font-size: 0.84rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+.pager__btn:hover:not(:disabled) { border-color: #6366f1; color: #4f46e5; background: #eef2ff; }
+.pager__btn--active { background: #4f46e5 !important; border-color: #4f46e5 !important; color: #fff !important; }
+.pager__btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.pager__dots { padding: 0 0.2rem; color: #94a3b8; }
+.pager__info { margin-left: 0.6rem; font-size: 0.78rem; color: #94a3b8; }
+
+/* ═══════════════════════════════════════════
+   Modals (Apple sheet style)
+   ═══════════════════════════════════════════ */
+.overlay {
+  position: fixed; inset: 0; background: rgba(15,23,42,0.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem;
 }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
+.sheet {
+  background: #fff; border-radius: 20px; width: 100%; box-shadow: 0 25px 60px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.04);
+  max-height: 90vh; overflow-y: auto;
+  animation: sheetIn 0.35s cubic-bezier(.32,.72,0,1);
 }
 
-.table thead {
-  background: #fafafa;
-  border-bottom: 1.5px solid #eee;
+.sheet--lg { max-width: 640px; }
+.sheet--sm { max-width: 440px; }
+
+@keyframes sheetIn {
+  from { opacity: 0; transform: scale(0.96) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-.table th {
-  padding: 0.85rem 1rem;
-  text-align: left;
-  font-weight: 600;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #888;
-  white-space: nowrap;
-  user-select: none;
+.sheet__head {
+  display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; border-bottom: 1px solid #f1f5f9;
 }
+.sheet__head--danger { border-bottom-color: #fecaca; }
 
-.table th.sortable {
-  cursor: pointer;
-  transition: color 0.15s;
+.sheet__user { display: flex; align-items: center; gap: 0.85rem; }
+.sheet__avatar { width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 0.95rem; }
+.sheet__avatar--edit { background: linear-gradient(135deg,#4f46e5,#6366f1); }
+.sheet__avatar--danger { background: linear-gradient(135deg,#dc2626,#ef4444); }
+
+.sheet__head h3 { margin: 0; font-size: 1.05rem; font-weight: 700; color: #1e293b; }
+.sheet__sub { margin: 0.1rem 0 0; font-size: 0.8rem; color: #94a3b8; }
+
+.sheet__close { background: #f1f5f9; border: none; color: #64748b; cursor: pointer; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.sheet__close:hover { background: #e2e8f0; color: #1e293b; }
+
+.sheet__body { padding: 1.25rem 1.5rem; }
+.sheet__body--center { text-align: center; }
+
+/* Detail grid */
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+.info-cell { display: flex; flex-direction: column; gap: 0.15rem; }
+.info-cell label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; }
+.info-cell span { font-size: 0.88rem; color: #1e293b; word-break: break-word; }
+
+/* Edit form */
+.edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+.fg { display: flex; flex-direction: column; gap: 0.25rem; }
+.fg label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; }
+.fi {
+  padding: 0.6rem 0.75rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.88rem;
+  background: #f8fafc; transition: all 0.25s cubic-bezier(.4,0,.2,1); width: 100%; box-sizing: border-box;
 }
+.fi:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); background: #fff; }
 
-.table th.sortable:hover {
-  color: #1b5e20;
+.sheet__actions {
+  display: flex; justify-content: flex-end; gap: 0.65rem; padding: 1rem 1.5rem; border-top: 1px solid #f1f5f9;
 }
+.sheet__actions--danger { border-top-color: #fecaca; background: #fefefe; border-radius: 0 0 20px 20px; }
 
-.sort-asc {
-  transform: rotate(180deg);
+.btn-cancel {
+  padding: 0.6rem 1.25rem; border: 1.5px solid #e2e8f0; border-radius: 10px; background: #fff; color: #475569;
+  font-weight: 600; font-size: 0.88rem; cursor: pointer; transition: all 0.2s;
 }
+.btn-cancel:hover { background: #f1f5f9; border-color: #cbd5e1; }
 
-.table td {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #f5f5f5;
-  font-size: 0.88rem;
-  color: #444;
-  vertical-align: middle;
+.btn-save {
+  display: flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1.25rem; border: none; border-radius: 10px;
+  background: linear-gradient(135deg,#4f46e5,#6366f1); color: #fff; font-weight: 600; font-size: 0.88rem; cursor: pointer;
+  transition: all 0.25s cubic-bezier(.4,0,.2,1); box-shadow: 0 2px 8px rgba(79,70,229,0.25);
 }
+.btn-save:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(79,70,229,0.35); }
+.btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.row-clickable {
-  cursor: pointer;
-  transition: background 0.15s;
+.btn-del {
+  display: flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1.25rem; border: none; border-radius: 10px;
+  background: linear-gradient(135deg,#dc2626,#ef4444); color: #fff; font-weight: 600; font-size: 0.88rem; cursor: pointer;
+  transition: all 0.25s cubic-bezier(.4,0,.2,1); box-shadow: 0 2px 8px rgba(220,38,38,0.25);
 }
+.btn-del:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(220,38,38,0.35); }
+.btn-del:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.row-clickable:hover {
-  background: #fafafa;
-}
+.del-msg { font-size: 0.92rem; color: #475569; line-height: 1.6; margin: 0; }
+.del-msg strong { color: #1e293b; }
 
-.text-ellipsis {
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+.spin { animation: spin 0.7s linear infinite; }
 
-.mono {
-  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-  font-size: 0.82rem;
-  letter-spacing: 0.02em;
-}
-
-.user-cell {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.user-cell__avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-weight: 600;
-  font-size: 0.78rem;
-  flex-shrink: 0;
-}
-
-.user-cell__info {
-  display: flex;
-  flex-direction: column;
-}
-
-.user-cell__name {
-  font-weight: 600;
-  color: #333;
-  font-size: 0.88rem;
-}
-
-.user-cell__sub {
-  font-size: 0.78rem;
-  color: #999;
-}
-
-.hide-desktop {
-  display: none;
-}
-
-/* ── Badges ── */
-.badge {
-  display: inline-block;
-  padding: 0.3rem 0.65rem;
-  border-radius: 20px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.badge--orange {
-  background: #fff3e0;
-  color: #e65100;
-}
-
-.badge--blue {
-  background: #e3f2fd;
-  color: #1565c0;
-}
-
-.badge--green {
-  background: #e8f5e9;
-  color: #2e7d32;
-}
-
-.badge--default {
-  background: #f5f5f5;
-  color: #999;
-}
-
-/* ── Pagination ── */
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.3rem;
-  padding: 1rem;
-  border-top: 1px solid #f0f0f0;
-}
-
-.page-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 36px;
-  height: 36px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  background: #fff;
-  color: #555;
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.page-btn:hover:not(:disabled) {
-  background: #f5f5f5;
-  border-color: #1b5e20;
-  color: #1b5e20;
-}
-
-.page-btn.active {
-  background: #1b5e20;
-  border-color: #1b5e20;
-  color: #fff;
-}
-
-.page-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.page-dots {
-  padding: 0 0.25rem;
-  color: #999;
-}
-
-.page-info {
-  margin-left: 0.75rem;
-  font-size: 0.82rem;
-  color: #999;
-}
-
-/* ── Modal ── */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-
-.modal {
-  background: #fff;
-  border-radius: 16px;
-  max-width: 400px;
-  width: 100%;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal--lg {
-  max-width: 640px;
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.modal-user-header {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-}
-
-.modal-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-weight: 700;
-  font-size: 1rem;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #333;
-}
-
-.modal-subtitle {
-  margin: 0.15rem 0 0;
-  font-size: 0.82rem;
-  color: #888;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  color: #999;
-  cursor: pointer;
-  padding: 0.3rem;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-}
-
-.modal-close:hover {
-  background: #f5f5f5;
-  color: #333;
-}
-
-.modal-body {
-  padding: 1.25rem 1.5rem 1.5rem;
-}
-
-.detail-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.detail-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.detail-item label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #999;
-}
-
-.detail-item span {
-  font-size: 0.9rem;
-  color: #333;
-  word-break: break-word;
-}
-
-/* ── Toast ── */
+/* ═══════════════════════════════════════════
+   Toast
+   ═══════════════════════════════════════════ */
 .toast {
-  position: fixed;
-  bottom: 1.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 0.85rem 1.5rem;
-  border-radius: 10px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  z-index: 1001;
-  animation: slideUp 0.3s ease;
+  position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.75rem 1.3rem; border-radius: 12px; font-size: 0.88rem; font-weight: 500; z-index: 1100;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+.toast--success { background: #065f46; color: #fff; }
+.toast--error { background: #991b1b; color: #fff; }
+
+/* ═══════════════════════════════════════════
+   Transitions
+   ═══════════════════════════════════════════ */
+.modal-enter-active { transition: opacity 0.25s cubic-bezier(.4,0,.2,1); }
+.modal-leave-active { transition: opacity 0.2s cubic-bezier(.4,0,.2,1); }
+.modal-enter-from, .modal-leave-to { opacity: 0; }
+
+.toast-enter-active { animation: toastIn 0.35s cubic-bezier(.32,.72,0,1); }
+.toast-leave-active { animation: toastOut 0.25s cubic-bezier(.4,0,.2,1) forwards; }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(16px) scale(0.95); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+@keyframes toastOut {
+  to { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.96); }
 }
 
-.toast--success {
-  background: #2e7d32;
-  color: #fff;
-}
+.fade-enter-active, .fade-leave-active { transition: opacity 0.15s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 
-.toast--error {
-  background: #c62828;
-  color: #fff;
-}
+/* List transition for table rows */
+.list-enter-active { transition: all 0.3s cubic-bezier(.4,0,.2,1); }
+.list-leave-active { transition: all 0.2s cubic-bezier(.4,0,.2,1); }
+.list-enter-from { opacity: 0; transform: translateY(-8px); }
+.list-leave-to { opacity: 0; transform: translateX(20px); }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
-/* ── Responsive ── */
+/* ═══════════════════════════════════════════
+   Responsive
+   ═══════════════════════════════════════════ */
 @media (max-width: 1024px) {
-  .hide-tablet {
-    display: none !important;
-  }
-  .hide-desktop {
-    display: block;
-  }
+  .hide-md { display: none !important; }
+  .show-sm { display: block; }
 }
 
 @media (max-width: 900px) {
-  .sidebar {
-    width: 68px;
-  }
-
-  .sidebar-header span,
-  .sidebar-brand,
-  .nav-item span,
-  .user-details,
-  .sidebar-nav-label {
-    display: none;
-  }
-
-  .sidebar-header {
-    justify-content: center;
-    padding: 1rem 0.5rem;
-  }
-
-  .sidebar-logo {
-    width: 36px;
-    height: 36px;
-  }
-
-  .nav-item {
-    justify-content: center;
-    padding: 0.6rem 0.5rem;
-  }
-
-  .sidebar-footer {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .user-info {
-    display: none;
-  }
-
-  .main-content {
-    margin-left: 68px;
-  }
-
-  .hide-mobile {
-    display: none !important;
-  }
-
-  .hide-desktop {
-    display: block;
-  }
+  .sidebar { width: 68px; }
+  .sidebar-brand, .nav-item span, .user-details, .sidebar-nav-label { display: none; }
+  .sidebar-header { justify-content: center; padding: 1rem 0.5rem; }
+  .sidebar-logo { width: 36px; height: 36px; }
+  .nav-item { justify-content: center; padding: 0.6rem 0.5rem; }
+  .sidebar-footer { flex-direction: column; gap: 0.5rem; }
+  .user-info { display: none; }
+  .main-content { margin-left: 68px; }
+  .hide-sm { display: none !important; }
+  .show-sm { display: block; }
 }
 
 @media (max-width: 600px) {
-  .main-content {
-    padding: 1rem;
-  }
-
-  .content-header {
-    flex-direction: column;
-  }
-
-  .header-stats {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .filters-bar {
-    flex-direction: column;
-  }
-
-  .search-box {
-    min-width: unset;
-  }
-
-  .filter-group {
-    flex-direction: column;
-  }
-
-  .detail-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .modal--lg {
-    max-width: 100%;
-    margin: 0;
-    border-radius: 12px;
-  }
+  .main-content { padding: 0.75rem 1rem 1.5rem; }
+  .toolbar-row--stats { gap: 0.4rem; }
+  .stat-pill { min-width: 0; flex: 1 1 calc(50% - 0.4rem); padding: 0.4rem 0.6rem; }
+  .stat-pill__value { font-size: 0.95rem; }
+  .toolbar-row--filters { flex-direction: column; }
+  .search-box { min-width: unset; }
+  .filter-chips { width: 100%; }
+  .filter-chip { flex: 1; }
+  .filter-chip select { min-width: 0; }
+  .info-grid, .edit-grid { grid-template-columns: 1fr; }
+  .sheet { border-radius: 16px; }
+  .sheet--lg, .sheet--sm { max-width: 100%; }
 }
 </style>

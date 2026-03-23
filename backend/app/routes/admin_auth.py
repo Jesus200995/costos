@@ -406,6 +406,23 @@ class PWAUserOut(BaseModel):
     created_at: str
 
 
+class PWAUserUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    curp: Optional[str] = None
+    tipo_capturista: Optional[str] = None
+    estado: Optional[str] = None
+    municipio: Optional[int] = None
+    localidad: Optional[str] = None
+    telefono: Optional[str] = None
+    cac_id: Optional[str] = None
+    cac_nombre: Optional[str] = None
+    territorio: Optional[str] = None
+    ruta: Optional[str] = None
+    correo_institucional: Optional[str] = None
+    rol_interno: Optional[str] = None
+
+
 @router.get("/usuarios-pwa", response_model=List[PWAUserOut])
 def list_usuarios_pwa(token: str):
     """Listar todos los usuarios de la PWA (solo administradores)"""
@@ -443,3 +460,72 @@ def list_usuarios_pwa(token: str):
         )
         for r in rows
     ]
+
+
+@router.put("/usuarios-pwa/{user_id}", response_model=PWAUserOut)
+def update_usuario_pwa(user_id: str, data: PWAUserUpdateRequest, token: str):
+    """Actualizar usuario PWA (solo administradores)"""
+    require_admin(token)
+
+    # Build SET clause dynamically from provided fields
+    updates = data.dict(exclude_unset=True)
+    if not updates:
+        raise HTTPException(400, "No se proporcionaron campos para actualizar")
+
+    set_parts = []
+    values = []
+    for field, value in updates.items():
+        set_parts.append(f"{field} = %s")
+        values.append(value)
+    values.append(user_id)
+
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            f"""UPDATE users SET {', '.join(set_parts)}, updated_at = CURRENT_TIMESTAMP
+               WHERE id = %s
+               RETURNING id, name, email, curp, tipo_capturista, estado, municipio,
+                         localidad, telefono, cac_id, cac_nombre, territorio, ruta,
+                         rol_comision, correo_institucional, rol_interno, created_at""",
+            values,
+        )
+        row = cur.fetchone()
+
+    if not row:
+        raise HTTPException(404, "Usuario no encontrado")
+
+    return PWAUserOut(
+        id=str(row["id"]),
+        name=row["name"],
+        email=row["email"],
+        curp=row["curp"],
+        tipo_capturista=row["tipo_capturista"],
+        estado=row["estado"],
+        municipio=row["municipio"],
+        localidad=row["localidad"],
+        telefono=row["telefono"],
+        cac_id=row["cac_id"],
+        cac_nombre=row["cac_nombre"],
+        territorio=row["territorio"],
+        ruta=row["ruta"],
+        rol_comision=row["rol_comision"],
+        correo_institucional=row["correo_institucional"],
+        rol_interno=row["rol_interno"],
+        created_at=row["created_at"].isoformat(),
+    )
+
+
+@router.delete("/usuarios-pwa/{user_id}")
+def delete_usuario_pwa(user_id: str, token: str):
+    """Eliminar usuario PWA (solo administradores)"""
+    require_admin(token)
+
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM users WHERE id = %s RETURNING id", (user_id,))
+        row = cur.fetchone()
+
+    if not row:
+        raise HTTPException(404, "Usuario no encontrado")
+
+    return {"message": "Usuario PWA eliminado correctamente"}
