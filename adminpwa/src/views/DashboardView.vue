@@ -41,7 +41,7 @@
 
         <router-link to="/visor" class="nav-item" :class="{ active: $route.path === '/visor' }">
           <Map :size="18" />
-          <span>Visor</span>
+          <span>Visor de Mapa</span>
         </router-link>
       </nav>
 

@@ -31,7 +31,7 @@
 
         <router-link to="/visor" class="nav-item" :class="{ active: $route.path === '/visor' }">
           <Map :size="18" />
-          <span>Visor</span>
+          <span>Visor de Mapa</span>
         </router-link>
       </nav>
 
@@ -56,8 +56,8 @@
       <!-- Top Bar -->
       <div class="top-bar">
         <div class="top-bar__info">
-          <h1 class="top-bar__title"><Map :size="22" /> Visor Geográfico</h1>
-          <p class="top-bar__desc">Mapa interactivo para visualización y análisis territorial</p>
+          <h1 class="top-bar__title"><Map :size="22" /> Visor de Mapa</h1>
+          <p class="top-bar__desc">Mapa interactivo satelital para visualización y análisis territorial</p>
         </div>
       </div>
 
@@ -70,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -97,22 +97,28 @@ function handleLogout() {
   router.push('/login')
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await nextTick()
   if (!mapContainer.value) return
 
   mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || ''
 
   map = new mapboxgl.Map({
     container: mapContainer.value,
-    style: 'mapbox://styles/mapbox/light-v11',
+    style: 'mapbox://styles/mapbox/satellite-streets-v12',
     center: [-102.5528, 23.6345],
     zoom: 4.8,
-    attributionControl: false
+    attributionControl: false,
+    projection: 'mercator'
   })
 
   map.addControl(new mapboxgl.NavigationControl(), 'top-right')
   map.addControl(new mapboxgl.FullscreenControl(), 'top-right')
   map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left')
+
+  map.on('load', () => {
+    map?.resize()
+  })
 })
 
 onBeforeUnmount(() => {
@@ -178,12 +184,17 @@ onBeforeUnmount(() => {
   box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
   overflow: hidden;
   min-height: 500px;
+  position: relative;
 }
 
 .map-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
   height: 100%;
-  min-height: 500px;
 }
 
 /* Mapbox overrides */
