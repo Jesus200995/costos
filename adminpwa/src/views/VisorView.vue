@@ -105,7 +105,7 @@ onMounted(async () => {
 
   map = new mapboxgl.Map({
     container: mapContainer.value,
-    style: 'mapbox://styles/mapbox/satellite-streets-v12',
+    style: 'mapbox://styles/mapbox/streets-v12',
     center: [-102.5528, 23.6345],
     zoom: 4.8,
     attributionControl: false,
