@@ -148,3 +148,15 @@ export interface CapturaItem {
   unidad: string
   unidades_disponibles: string[]
 }
+
+export interface PrecioHistorialItem {
+  id: number
+  producto_id: number
+  producto_nombre: string
+  subcategoria_nombre: string
+  precio: number
+  unidad: string
+  tipo_precio: string
+  fecha: string
+  created_at: string
+}

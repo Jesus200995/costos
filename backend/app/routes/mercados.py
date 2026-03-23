@@ -2,7 +2,8 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import List, Optional
 from app.schemas import (
     CategoriaOut, SubcategoriaOut, ProductoOut, UnidadOut,
-    MercadoCreate, MercadoOut, ReporteCreate, ReporteOut, ReporteDetalleOut, DetalleItemOut
+    MercadoCreate, MercadoOut, ReporteCreate, ReporteOut, ReporteDetalleOut, DetalleItemOut,
+    PrecioIndividualCreate, PrecioHistorialItem
 )
 from app.database import get_db
 from app.auth import get_current_user_id
@@ -244,3 +245,103 @@ def get_reporte(reporte_id: int, user_id: str = Depends(get_current_user_id)):
             for i in items
         ],
     )
+
+
+# ── Precio individual (producto por producto) ──
+
+@router.post("/precio", response_model=PrecioHistorialItem, status_code=201)
+def create_precio_individual(data: PrecioIndividualCreate, user_id: str = Depends(get_current_user_id)):
+    if data.tipo_precio not in ("MENUDEO", "MAYOREO"):
+        raise HTTPException(400, "Tipo de precio inválido")
+    if data.precio <= 0:
+        raise HTTPException(400, "El precio debe ser mayor a 0")
+    if data.precio != round(data.precio, 2):
+        raise HTTPException(400, "El precio debe tener máximo 2 decimales")
+
+    with get_db() as conn:
+        cur = conn.cursor()
+        # Verificar mercado pertenece al usuario
+        cur.execute(
+            "SELECT id FROM mercados WHERE id = %s AND user_id = %s::uuid",
+            (data.mercado_id, user_id),
+        )
+        if not cur.fetchone():
+            raise HTTPException(404, "Mercado no encontrado")
+
+        # Verificar producto existe
+        cur.execute(
+            "SELECT id, subcategoria_id, nombre FROM productos WHERE id = %s",
+            (data.producto_id,),
+        )
+        prod = cur.fetchone()
+        if not prod:
+            raise HTTPException(404, "Producto no encontrado")
+
+        # Crear reporte de 1 item
+        cur.execute(
+            """INSERT INTO reportes_precios (user_id, mercado_id, tipo_precio)
+               VALUES (%s::uuid, %s, %s)
+               RETURNING id, fecha, created_at""",
+            (user_id, data.mercado_id, data.tipo_precio),
+        )
+        reporte = cur.fetchone()
+
+        cur.execute(
+            """INSERT INTO detalle_precios (reporte_id, producto_id, precio, unidad)
+               VALUES (%s, %s, %s, %s)
+               RETURNING id""",
+            (reporte["id"], data.producto_id, data.precio, data.unidad),
+        )
+        detalle = cur.fetchone()
+
+        # Obtener nombre de subcategoría
+        cur.execute(
+            "SELECT nombre FROM subcategorias WHERE id = %s",
+            (prod["subcategoria_id"],),
+        )
+        sub = cur.fetchone()
+
+    return PrecioHistorialItem(
+        id=detalle["id"],
+        producto_id=data.producto_id,
+        producto_nombre=prod["nombre"],
+        subcategoria_nombre=sub["nombre"] if sub else "",
+        precio=data.precio,
+        unidad=data.unidad,
+        tipo_precio=data.tipo_precio,
+        fecha=reporte["fecha"].isoformat(),
+        created_at=reporte["created_at"].isoformat(),
+    )
+
+
+@router.get("/precios-historial", response_model=List[PrecioHistorialItem])
+def list_precios_historial(mercado_id: int = Query(...), user_id: str = Depends(get_current_user_id)):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """SELECT d.id, d.producto_id, p.nombre as producto_nombre,
+                   s.nombre as subcategoria_nombre,
+                   d.precio, d.unidad, r.tipo_precio, r.fecha, r.created_at
+               FROM detalle_precios d
+               JOIN reportes_precios r ON r.id = d.reporte_id
+               JOIN productos p ON p.id = d.producto_id
+               JOIN subcategorias s ON s.id = p.subcategoria_id
+               WHERE r.mercado_id = %s AND r.user_id = %s::uuid
+               ORDER BY r.created_at DESC""",
+            (mercado_id, user_id),
+        )
+        rows = cur.fetchall()
+    return [
+        PrecioHistorialItem(
+            id=r["id"],
+            producto_id=r["producto_id"],
+            producto_nombre=r["producto_nombre"],
+            subcategoria_nombre=r["subcategoria_nombre"],
+            precio=float(r["precio"]),
+            unidad=r["unidad"],
+            tipo_precio=r["tipo_precio"],
+            fecha=r["fecha"].isoformat(),
+            created_at=r["created_at"].isoformat(),
+        )
+        for r in rows
+    ]

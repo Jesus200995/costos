@@ -1,7 +1,7 @@
 import api from './api'
 import type {
   Categoria, Subcategoria, Producto, Unidad,
-  Mercado, ReporteOut, ReporteDetalleOut, DetalleItem
+  Mercado, ReporteOut, ReporteDetalleOut, DetalleItem, PrecioHistorialItem
 } from '@/types'
 
 export const mercadosService = {
@@ -62,6 +62,25 @@ export const mercadosService = {
 
   async getReporte(id: number): Promise<ReporteDetalleOut> {
     const { data } = await api.get<ReporteDetalleOut>(`/mercados/reportes/${id}`)
+    return data
+  },
+
+  // Precio individual
+  async savePrecioIndividual(payload: {
+    mercado_id: number
+    tipo_precio: string
+    producto_id: number
+    precio: number
+    unidad: string
+  }): Promise<PrecioHistorialItem> {
+    const { data } = await api.post<PrecioHistorialItem>('/mercados/precio', payload)
+    return data
+  },
+
+  async getPreciosHistorial(mercado_id: number): Promise<PrecioHistorialItem[]> {
+    const { data } = await api.get<PrecioHistorialItem[]>('/mercados/precios-historial', {
+      params: { mercado_id }
+    })
     return data
   }
 }

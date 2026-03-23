@@ -95,7 +95,6 @@
         <!-- Categoría -->
         <div class="filter-section">
           <label class="filter-label">Categoría</label>
-          <p v-if="!selectedCategoria" class="step-hint">1. Selecciona una categoría para comenzar</p>
           <div class="category-tabs">
             <button
               v-for="cat in categorias"
@@ -114,7 +113,6 @@
         <!-- Subcategoría -->
         <div v-if="selectedCategoria" class="filter-section">
           <label class="filter-label">Subcategoría</label>
-          <p v-if="!selectedSubcategoria" class="step-hint">2. Selecciona una subcategoría</p>
           <select v-model="selectedSubcategoria" class="input" @change="onSubcategoriaChange">
             <option value="">Selecciona subcategoría...</option>
             <option v-for="sub in subcategorias" :key="sub.id" :value="sub.id">
@@ -123,135 +121,77 @@
           </select>
         </div>
 
-        <!-- Agregar producto -->
-        <div v-if="selectedSubcategoria" class="add-product-section">
-          <label class="filter-label">Agregar producto</label>
-          <p v-if="!selectedProductoId" class="step-hint">3. Selecciona un producto y presiona <strong>+</strong> para agregarlo</p>
-          <div class="add-product-row">
-            <select v-model="selectedProductoId" class="input input--grow">
-              <option value="">Buscar producto...</option>
-              <option
-                v-for="p in availableProductos"
-                :key="p.id"
-                :value="p.id"
-              >{{ p.nombre }}</option>
-            </select>
-            <button
-              class="btn btn--primary btn--icon-only"
-              :disabled="!selectedProductoId"
-              @click="addProduct"
-              title="Agregar producto"
-            >
-              <Plus :size="20" />
-            </button>
-          </div>
-          <!-- Tip: múltiples productos -->
-          <div class="multi-product-tip">
-            <Info :size="14" />
-            <span>Puedes agregar varios productos antes de guardar el reporte</span>
-          </div>
+        <!-- Producto -->
+        <div v-if="selectedSubcategoria" class="filter-section">
+          <label class="filter-label">Producto</label>
+          <select v-model="selectedProductoId" class="input" @change="onProductoChange">
+            <option value="">Selecciona producto...</option>
+            <option v-for="p in productos" :key="p.id" :value="p.id">
+              {{ p.nombre }}
+            </option>
+          </select>
         </div>
 
-        <!-- Tabla de captura -->
-        <div v-if="capturaItems.length > 0" class="captura-table-section">
-          <div class="captura-table-header">
-            <h3>
-              <ClipboardList :size="18" />
-              Productos seleccionados ({{ capturaItems.length }})
-            </h3>
-          </div>
-
-          <div class="captura-cards">
-            <div v-for="(item, idx) in capturaItems" :key="idx" class="captura-card">
-              <!-- Icono de categoría -->
-              <div class="captura-card__cat-icon" :class="item.categoria_id === 'AGRICOLA' ? 'cat-icon--agricola' : 'cat-icon--pecuario'">
-                <Wheat v-if="item.categoria_id === 'AGRICOLA'" :size="12" />
-                <Beef v-else :size="12" />
-              </div>
-              <div class="captura-card__content">
-                <div class="captura-card__header">
-                  <span class="captura-card__name">{{ item.producto_nombre }}</span>
-                  <button class="captura-card__delete" @click="removeProduct(idx)" title="Quitar">
-                    <X :size="14" />
-                  </button>
-                </div>
-                <div class="captura-card__fields">
-                  <div class="captura-field">
-                    <label>Precio (MXN)</label>
-                    <input
-                      type="number"
-                      v-model.number="item.precio"
-                      class="input input--price"
-                      placeholder="0.00"
-                      min="0.01"
-                      step="0.01"
-                      @blur="validatePrice(item)"
-                    />
-                  </div>
-                  <div class="captura-field">
-                    <label>Unidad</label>
-                    <select v-model="item.unidad" class="input">
-                      <option value="">Seleccionar...</option>
-                      <option v-for="u in item.unidades_disponibles" :key="u" :value="u">
-                        {{ u }}
-                      </option>
-                    </select>
-                  </div>
-                </div>
-                <p v-if="item.precio !== null && item.precio <= 0" class="field-error">
-                  El precio debe ser mayor a 0
-                </p>
-              </div>
+        <!-- Formulario de precio (aparece al seleccionar producto) -->
+        <div v-if="selectedProducto" class="precio-form">
+          <div class="precio-form__header">
+            <div class="precio-form__cat-icon" :class="selectedCategoria === 'AGRICOLA' ? 'cat-icon--agricola' : 'cat-icon--pecuario'">
+              <Wheat v-if="selectedCategoria === 'AGRICOLA'" :size="14" />
+              <Beef v-else :size="14" />
             </div>
+            <span class="precio-form__name">{{ selectedProducto.nombre }}</span>
           </div>
-        </div>
-
-        <!-- Resumen y guardar -->
-        <div v-if="capturaItems.length > 0" class="captura-footer">
-          <div class="captura-summary">
-            <span>{{ validItems }} de {{ capturaItems.length }} productos listos</span>
+          <div class="precio-form__fields">
+            <div class="precio-form__field">
+              <label>Precio (MXN)</label>
+              <input
+                ref="precioInput"
+                type="number"
+                v-model.number="precioValue"
+                class="input input--price"
+                placeholder="0.00"
+                min="0.01"
+                step="0.01"
+              />
+            </div>
+            <div class="precio-form__field">
+              <label>Unidad</label>
+              <select v-model="unidadValue" class="input">
+                <option value="">Seleccionar...</option>
+                <option v-for="u in unidades" :key="u.id" :value="u.nombre">
+                  {{ u.nombre }}
+                </option>
+              </select>
+            </div>
           </div>
           <button
             class="btn btn--primary btn--full"
-            :disabled="!canSave || saving"
-            @click="saveReporte"
+            :disabled="!canSavePrecio || saving"
+            @click="savePrecio"
           >
             <Save :size="18" />
-            <span>{{ saving ? 'Guardando...' : 'Guardar reporte' }}</span>
+            <span>{{ saving ? 'Guardando...' : 'Guardar precio' }}</span>
           </button>
         </div>
 
-        <!-- Reportes anteriores -->
-        <div v-if="reportes.length > 0" class="reportes-section">
-          <h3 class="reportes-title">
+        <!-- Historial de precios registrados -->
+        <div v-if="historial.length > 0" class="historial-section">
+          <h3 class="historial-title">
             <FileText :size="18" />
-            Reportes anteriores
+            Precios registrados ({{ historial.length }})
           </h3>
-          <div
-            v-for="r in reportes"
-            :key="r.id"
-            class="reporte-card"
-          >
-            <div class="reporte-card__main" @click="toggleReporteDetalle(r.id)">
-              <div class="reporte-card__left">
-                <span class="reporte-card__tipo" :class="r.tipo_precio === 'MENUDEO' ? 'badge--blue' : 'badge--orange'">
-                  {{ r.tipo_precio }}
-                </span>
-                <div class="reporte-card__meta">
-                  <span class="reporte-card__fecha">{{ r.fecha }}</span>
-                  <span class="reporte-card__count">{{ r.total_productos }} productos</span>
-                </div>
+          <div class="historial-scroll">
+            <div v-for="h in historial" :key="h.id" class="historial-row">
+              <div class="historial-row__left">
+                <span class="historial-row__name">{{ h.producto_nombre }}</span>
+                <span class="historial-row__sub">{{ h.subcategoria_nombre }}</span>
               </div>
-              <button class="reporte-card__toggle" :class="{ 'toggle--open': expandedReporte === r.id }">
-                <ChevronDown :size="20" />
-              </button>
-            </div>
-            <!-- Detalle expandido -->
-            <div v-if="expandedReporte === r.id && reporteDetalle" class="reporte-detalle">
-              <div v-for="d in reporteDetalle.items" :key="d.id" class="detalle-row">
-                <span class="detalle-row__name">{{ d.producto_nombre }}</span>
-                <span class="detalle-row__price">${{ d.precio.toFixed(2) }}</span>
-                <span class="detalle-row__unit">{{ d.unidad }}</span>
+              <div class="historial-row__right">
+                <span class="historial-row__price">${{ h.precio.toFixed(2) }}</span>
+                <span class="historial-row__unit">{{ h.unidad }}</span>
+                <span class="historial-row__badge" :class="h.tipo_precio === 'MENUDEO' ? 'badge--blue' : 'badge--orange'">
+                  {{ h.tipo_precio === 'MENUDEO' ? 'Men' : 'May' }}
+                </span>
               </div>
             </div>
           </div>
@@ -264,17 +204,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { mercadosService } from '@/services/mercados.service'
-import type { Mercado, Categoria, Subcategoria, Producto, Unidad, CapturaItem, ReporteOut, ReporteDetalleOut } from '@/types'
+import type { Mercado, Categoria, Subcategoria, Producto, Unidad, PrecioHistorialItem } from '@/types'
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppToast from '@/components/AppToast.vue'
 import {
   Store, Plus, Trash2, ChevronRight, ArrowLeft,
-  Wheat, Beef, ClipboardList, X, Save, FileText,
-  ChevronDown, Info
+  Wheat, Beef, Save, FileText
 } from 'lucide-vue-next'
 
 const ui = useUiStore()
@@ -295,15 +234,15 @@ const selectedCategoria = ref('')
 const selectedSubcategoria = ref('')
 const selectedProductoId = ref<number | ''>('')
 
-// ── State: Captura ──
+// ── State: Precio individual ──
 const tipoPrecio = ref<'MENUDEO' | 'MAYOREO'>('MENUDEO')
-const capturaItems = ref<CapturaItem[]>([])
+const precioValue = ref<number | null>(null)
+const unidadValue = ref('')
 const saving = ref(false)
+const precioInput = ref<HTMLInputElement | null>(null)
 
-// ── State: Reportes ──
-const reportes = ref<ReporteOut[]>([])
-const expandedReporte = ref<number | null>(null)
-const reporteDetalle = ref<ReporteDetalleOut | null>(null)
+// ── State: Historial ──
+const historial = ref<PrecioHistorialItem[]>([])
 
 // ── Helpers ──
 function toUpper(v: string): string {
@@ -319,17 +258,13 @@ function closeSidebar() {
 }
 
 // ── Computed ──
-const availableProductos = computed(() => {
-  const addedIds = new Set(capturaItems.value.map(i => i.producto_id))
-  return productos.value.filter(p => !addedIds.has(p.id))
+const selectedProducto = computed(() => {
+  if (!selectedProductoId.value) return null
+  return productos.value.find(p => p.id === selectedProductoId.value) || null
 })
 
-const validItems = computed(() =>
-  capturaItems.value.filter(i => i.precio && i.precio > 0 && i.unidad).length
-)
-
-const canSave = computed(() =>
-  capturaItems.value.length > 0 && validItems.value === capturaItems.value.length
+const canSavePrecio = computed(() =>
+  precioValue.value !== null && precioValue.value > 0 && unidadValue.value !== ''
 )
 
 // ── Mercados CRUD ──
@@ -363,7 +298,7 @@ async function addMercado() {
 }
 
 async function deleteMercado(id: number) {
-  if (!confirm('¿Eliminar este mercado? Se eliminarán también sus reportes.')) return
+  if (!confirm('¿Eliminar este mercado? Se eliminarán también sus precios.')) return
   try {
     await mercadosService.deleteMercado(id)
     mercados.value = mercados.value.filter(m => m.id !== id)
@@ -375,20 +310,18 @@ async function deleteMercado(id: number) {
 
 async function selectMercado(m: Mercado) {
   selectedMercado.value = m
-  capturaItems.value = []
   selectedCategoria.value = ''
   selectedSubcategoria.value = ''
   selectedProductoId.value = ''
-  reportes.value = []
-  expandedReporte.value = null
-  reporteDetalle.value = null
+  precioValue.value = null
+  unidadValue.value = ''
+  historial.value = []
 
-  // Load categorias + reportes
   try {
     if (categorias.value.length === 0) {
       categorias.value = await mercadosService.getCategorias()
     }
-    reportes.value = await mercadosService.getReportes(m.id)
+    historial.value = await mercadosService.getPreciosHistorial(m.id)
   } catch {
     ui.showToast('Error al cargar datos', 'error')
   }
@@ -396,7 +329,6 @@ async function selectMercado(m: Mercado) {
 
 function backToMercados() {
   selectedMercado.value = null
-  capturaItems.value = []
 }
 
 // ── Filtros ──
@@ -407,6 +339,8 @@ async function onCategoriaChange(catId: string) {
   subcategorias.value = []
   productos.value = []
   unidades.value = []
+  precioValue.value = null
+  unidadValue.value = ''
   try {
     subcategorias.value = await mercadosService.getSubcategorias(catId)
   } catch {
@@ -419,6 +353,8 @@ async function onSubcategoriaChange() {
   selectedProductoId.value = ''
   productos.value = []
   unidades.value = []
+  precioValue.value = null
+  unidadValue.value = ''
   if (!subId) return
   try {
     const [prods, units] = await Promise.all([
@@ -432,107 +368,55 @@ async function onSubcategoriaChange() {
   }
 }
 
+function onProductoChange() {
+  precioValue.value = null
+  unidadValue.value = unidades.value.length === 1 ? unidades.value[0].nombre : ''
+  nextTick(() => {
+    precioInput.value?.focus()
+  })
+}
+
 // Recargar unidades al cambiar tipo de precio
 watch(tipoPrecio, async () => {
   const subId = selectedSubcategoria.value
   if (!subId) return
   try {
     unidades.value = await mercadosService.getUnidades(subId, tipoPrecio.value)
-    // Actualizar unidades disponibles en items existentes
+    // Resetear unidad si ya no está disponible
     const unitNames = unidades.value.map(u => u.nombre)
-    capturaItems.value.forEach(item => {
-      if (item.subcategoria_id === subId) {
-        item.unidades_disponibles = unitNames
-        if (!unitNames.includes(item.unidad)) {
-          item.unidad = unitNames.length === 1 ? unitNames[0] : ''
-        }
-      }
-    })
+    if (!unitNames.includes(unidadValue.value)) {
+      unidadValue.value = unitNames.length === 1 ? unitNames[0] : ''
+    }
   } catch {
     ui.showToast('Error al cargar unidades', 'error')
   }
 })
 
-// ── Captura ──
-function addProduct() {
-  const pid = selectedProductoId.value
-  if (!pid) return
-  const prod = productos.value.find(p => p.id === pid)
-  if (!prod) return
-
-  const unitNames = unidades.value.map(u => u.nombre)
-
-  capturaItems.value.push({
-    producto_id: prod.id,
-    producto_nombre: prod.nombre,
-    subcategoria_id: prod.subcategoria_id,
-    categoria_id: selectedCategoria.value,
-    precio: null,
-    unidad: unitNames.length === 1 ? unitNames[0] : '',
-    unidades_disponibles: unitNames
-  })
-  selectedProductoId.value = ''
-}
-
-function removeProduct(idx: number) {
-  capturaItems.value.splice(idx, 1)
-}
-
-function validatePrice(item: CapturaItem) {
-  if (item.precio !== null && item.precio !== 0) {
-    item.precio = Math.round(item.precio * 100) / 100
-  }
-}
-
-async function saveReporte() {
-  if (!canSave.value || !selectedMercado.value) return
-
-  // Check duplicates: producto + unidad
-  const seen = new Set<string>()
-  for (const item of capturaItems.value) {
-    const key = `${item.producto_id}-${item.unidad}`
-    if (seen.has(key)) {
-      ui.showToast(`Producto duplicado con la misma unidad: ${item.producto_nombre}`, 'error')
-      return
-    }
-    seen.add(key)
-  }
+// ── Guardar precio individual ──
+async function savePrecio() {
+  if (!canSavePrecio.value || !selectedMercado.value || !selectedProductoId.value) return
 
   saving.value = true
   try {
-    await mercadosService.createReporte({
+    const saved = await mercadosService.savePrecioIndividual({
       mercado_id: selectedMercado.value.id,
       tipo_precio: tipoPrecio.value,
-      items: capturaItems.value.map(i => ({
-        producto_id: i.producto_id,
-        precio: i.precio!,
-        unidad: i.unidad
-      }))
+      producto_id: selectedProductoId.value as number,
+      precio: Math.round(precioValue.value! * 100) / 100,
+      unidad: unidadValue.value
     })
-    ui.showToast('Reporte guardado exitosamente', 'success')
-    capturaItems.value = []
-    reportes.value = await mercadosService.getReportes(selectedMercado.value.id)
+    historial.value.unshift(saved)
+    ui.showToast(`${saved.producto_nombre} — $${saved.precio.toFixed(2)} guardado`, 'success')
+
+    // Limpiar para el siguiente producto
+    precioValue.value = null
+    unidadValue.value = unidades.value.length === 1 ? unidades.value[0].nombre : ''
+    selectedProductoId.value = ''
   } catch (e: any) {
-    const msg = e.response?.data?.detail || 'Error al guardar reporte'
+    const msg = e.response?.data?.detail || 'Error al guardar precio'
     ui.showToast(msg, 'error')
   } finally {
     saving.value = false
-  }
-}
-
-// ── Reportes ──
-async function toggleReporteDetalle(id: number) {
-  if (expandedReporte.value === id) {
-    expandedReporte.value = null
-    reporteDetalle.value = null
-    return
-  }
-  expandedReporte.value = id
-  reporteDetalle.value = null
-  try {
-    reporteDetalle.value = await mercadosService.getReporte(id)
-  } catch {
-    ui.showToast('Error al cargar detalle', 'error')
   }
 }
 
@@ -852,66 +736,24 @@ onMounted(() => {
   gap: 0.5rem;
 }
 
-/* Tip múltiples productos */
-.multi-product-tip {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-top: 0.65rem;
-  padding: 0.5rem 0.75rem;
-  background: #fff8e1;
-  border-radius: 8px;
-  border-left: 3px solid #ffc107;
-}
-.multi-product-tip svg {
-  color: #f9a825;
-  flex-shrink: 0;
-}
-.multi-product-tip span {
-  font-size: 0.8rem;
-  color: #5d4037;
-  line-height: 1.3;
-}
-
-/* ── Capture Table ── */
-.captura-table-section {
-  margin-bottom: 1.25rem;
-}
-.captura-table-header {
-  margin-bottom: 0.75rem;
-}
-.captura-table-header h3 {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #333;
-}
-
-.captura-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.captura-card {
-  position: relative;
+/* ── Precio Form (individual) ── */
+.precio-form {
   background: #fff;
   border: 1.5px solid #e8f5e9;
   border-radius: 14px;
-  padding: 0.85rem 0.85rem 0.85rem 2.5rem;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
-
-/* Icono de categoría */
-.captura-card__cat-icon {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  width: 24px;
-  height: 24px;
+.precio-form__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.precio-form__cat-icon {
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -925,45 +767,20 @@ onMounted(() => {
   background: #fce4ec;
   color: #d81b60;
 }
-
-.captura-card__content {
-  width: 100%;
-}
-.captura-card__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-}
-.captura-card__name {
-  font-weight: 600;
-  font-size: 0.95rem;
+.precio-form__name {
+  font-weight: 700;
+  font-size: 1.05rem;
   color: #1B5E20;
 }
-.captura-card__delete {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border: none;
-  border-radius: 50%;
-  background: #ffebee;
-  color: #c62828;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.captura-card__delete:hover {
-  background: #ffcdd2;
-}
-.captura-card__fields {
+.precio-form__fields {
   display: flex;
   gap: 0.5rem;
+  margin-bottom: 0.85rem;
 }
-.captura-field {
+.precio-form__field {
   flex: 1;
 }
-.captura-field label {
+.precio-form__field label {
   display: block;
   font-size: 0.75rem;
   font-weight: 600;
@@ -971,30 +788,13 @@ onMounted(() => {
   margin-bottom: 0.2rem;
 }
 
-.field-error {
-  color: #c62828;
-  font-size: 0.78rem;
-  margin: 0.25rem 0 0;
-}
-
-/* ── Captura Footer ── */
-.captura-footer {
-  margin-bottom: 1.5rem;
-}
-.captura-summary {
-  text-align: center;
-  font-size: 0.85rem;
-  color: #666;
-  margin-bottom: 0.5rem;
-}
-
-/* ── Reportes ── */
-.reportes-section {
+/* ── Historial de precios ── */
+.historial-section {
   margin-top: 1.5rem;
   padding-top: 1.25rem;
   border-top: 1.5px solid #e8f5e9;
 }
-.reportes-title {
+.historial-title {
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -1003,46 +803,68 @@ onMounted(() => {
   color: #333;
   margin: 0 0 0.75rem;
 }
-
-.reporte-card {
+.historial-scroll {
+  max-height: 360px;
+  overflow-y: auto;
   background: #fff;
   border: 1.5px solid #e8f5e9;
   border-radius: 12px;
-  margin-bottom: 0.65rem;
-  overflow: hidden;
-  transition: all 0.2s;
 }
-.reporte-card:hover {
-  border-color: #1B5E20;
-}
-
-.reporte-card__main {
+.historial-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.85rem 1rem;
-  cursor: pointer;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid #f0f0f0;
+  gap: 0.5rem;
 }
-
-.reporte-card__left {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+.historial-row:last-child {
+  border-bottom: none;
 }
-
-.reporte-card__meta {
+.historial-row__left {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.05rem;
+  min-width: 0;
+  flex: 1;
 }
-
-.reporte-card__tipo {
-  font-size: 0.7rem;
+.historial-row__name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.historial-row__sub {
+  font-size: 0.75rem;
+  color: #999;
+}
+.historial-row__right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.historial-row__price {
   font-weight: 700;
-  padding: 0.2rem 0.6rem;
-  border-radius: 6px;
+  color: #1B5E20;
+  font-size: 0.9rem;
+}
+.historial-row__unit {
+  color: #888;
+  font-size: 0.78rem;
+  min-width: 55px;
+  text-align: right;
+}
+.historial-row__badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
   text-transform: uppercase;
 }
+
 .badge--blue {
   background: #e3f2fd;
   color: #1565c0;
@@ -1051,74 +873,10 @@ onMounted(() => {
   background: #fff3e0;
   color: #e65100;
 }
-.reporte-card__fecha {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #333;
-}
-.reporte-card__count {
-  font-size: 0.8rem;
-  color: #888;
-}
-
-.reporte-card__toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 50%;
-  background: #f5f5f5;
-  color: #666;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.reporte-card__toggle:hover {
-  background: #e8f5e9;
-  color: #1B5E20;
-}
-.reporte-card__toggle.toggle--open {
-  background: #1B5E20;
-  color: #fff;
-  transform: rotate(180deg);
-}
-
-.reporte-detalle {
-  padding: 0.75rem 1rem;
-  background: #fafafa;
-  border-top: 1px solid #e8f5e9;
-}
-.detalle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.45rem 0;
-  font-size: 0.85rem;
-  border-bottom: 1px solid #eee;
-}
-.detalle-row:last-child {
-  border-bottom: none;
-}
-.detalle-row__name {
-  flex: 1;
-  color: #333;
-}
-.detalle-row__price {
-  font-weight: 600;
-  color: #1B5E20;
-  margin: 0 0.75rem;
-}
-.detalle-row__unit {
-  color: #888;
-  font-size: 0.8rem;
-  min-width: 70px;
-  text-align: right;
-}
 
 /* ── Responsive ── */
 @media (max-width: 480px) {
-  .captura-card__fields {
+  .precio-form__fields {
     flex-direction: column;
   }
   .tipo-precio-toggle {

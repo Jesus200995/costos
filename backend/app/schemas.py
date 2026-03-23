@@ -158,3 +158,25 @@ class ReporteDetalleOut(BaseModel):
     fecha: str
     created_at: str
     items: List[DetalleItemOut]
+
+
+# ── Precio individual ──
+
+class PrecioIndividualCreate(BaseModel):
+    mercado_id: int
+    tipo_precio: str
+    producto_id: int
+    precio: float
+    unidad: str
+
+
+class PrecioHistorialItem(BaseModel):
+    id: int
+    producto_id: int
+    producto_nombre: str
+    subcategoria_nombre: str
+    precio: float
+    unidad: str
+    tipo_precio: str
+    fecha: str
+    created_at: str
