@@ -9,10 +9,7 @@
         <div class="historial-top">
           <div class="section-header">
             <ClipboardList :size="24" />
-            <div>
-              <h1>Historial de Precios</h1>
-              <p class="section-subtitle">Selecciona fechas y filtros para consultar tus capturas</p>
-            </div>
+            <h1>Historial de Precios</h1>
           </div>
 
           <!-- Filtros -->
@@ -220,61 +217,44 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* ── Layout de página ── */
-.main-content {
-  padding-top: 60px;
-  height: 100vh;
-  height: 100dvh;
-  height: -webkit-fill-available;
-  background: #fafafa;
-  overflow: hidden;
-}
+/* ── Layout (mismo patrón que MercadosView — scroll natural) ── */
 .historial-page {
   max-width: 640px;
   margin: 0 auto;
-  padding: 0.85rem 1rem 0;
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 60px);
-  height: calc(100dvh - 60px);
-  overflow: hidden;
+  padding: 1rem 1rem 2rem;
 }
 
-/* ── Header + filtros (siempre visible) ── */
-.historial-top {
-  flex-shrink: 0;
-}
+/* ── Header ── */
 .section-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1.25rem;
   color: #1B5E20;
 }
 .section-header h1 {
-  font-size: 1.3rem;
+  font-size: 1.35rem;
   font-weight: 700;
   margin: 0;
-  line-height: 1.2;
 }
 .section-subtitle {
   font-size: 0.78rem;
   color: #888;
   font-weight: 400;
-  margin: 0.15rem 0 0;
+  margin: 0.1rem 0 0;
 }
 
-/* ── Filtros ── */
+/* ── Filtros card ── */
 .filtros-card {
   background: #fff;
-  border: 1.5px solid #c8e6c9;
+  border: 1.5px solid #e0e0e0;
   border-radius: 14px;
   padding: 0.85rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
-  box-shadow: 0 1px 4px rgba(27,94,32,0.06);
+  gap: 0.6rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 .filtros-fechas {
   display: grid;
@@ -294,15 +274,15 @@ onMounted(() => {
   margin-bottom: 0.25rem;
 }
 
-/* ── Inputs & Date ── */
+/* ── Inputs ── */
 .input {
   width: 100%;
   padding: 0.5rem 0.65rem;
-  border: 1.5px solid #c8e6c9;
+  border: 1.5px solid #e0e0e0;
   border-radius: 10px;
   font-size: 0.85rem;
   color: #333;
-  background: #f9fdf9;
+  background: #fff;
   transition: border-color 0.15s, box-shadow 0.15s;
   box-sizing: border-box;
   min-width: 0;
@@ -331,7 +311,7 @@ onMounted(() => {
   padding: 0.5rem 0.65rem;
   font-size: 0.84rem;
   min-height: 38px;
-  background: #f9fdf9 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231B5E20' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 0.55rem center;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231B5E20' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 0.55rem center;
   padding-right: 1.9rem;
 }
 
@@ -342,11 +322,11 @@ onMounted(() => {
 }
 .toggle-pill {
   flex: 1;
-  padding: 0.4rem 0.45rem;
-  border: 1.5px solid #c8e6c9;
+  padding: 0.45rem 0.5rem;
+  border: 1.5px solid #e0e0e0;
   border-radius: 8px;
   background: #fff;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: #666;
   cursor: pointer;
@@ -364,55 +344,46 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.3rem 0.55rem;
+  padding: 0.35rem 0.6rem;
   border: none;
   background: #ffebee;
   color: #c62828;
   border-radius: 8px;
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   align-self: flex-start;
 }
 
-/* ── Resumen ── */
+/* ── Resumen bar ── */
 .resumen-bar {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.5rem;
-  font-size: 0.78rem;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.82rem;
   color: #1B5E20;
-  margin-bottom: 0.45rem;
+  margin-bottom: 1rem;
   flex-wrap: wrap;
   background: #e8f5e9;
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 500;
 }
 .resumen-sep {
   color: #a5d6a7;
 }
 
-/* ── Contenedor scrollable de resultados ── */
+/* ── Resultados ── */
 .historial-results {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  background: #fff;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 14px;
-  padding: 0.65rem;
-  margin-bottom: 0.5rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-  -webkit-overflow-scrolling: touch;
+  /* sin overflow ni altura fija — scroll natural de página */
 }
 
 /* ── Loading / Empty ── */
 .loading-state,
 .empty-state {
   text-align: center;
-  padding: 2.5rem 1rem;
+  padding: 3rem 1rem;
   color: #bbb;
 }
 .loading-state p,
@@ -428,8 +399,8 @@ onMounted(() => {
   color: #bbb !important;
 }
 .spinner {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border: 3px solid #e0e0e0;
   border-top-color: #1B5E20;
   border-radius: 50%;
@@ -438,27 +409,22 @@ onMounted(() => {
 }
 @keyframes spin { to { transform: rotate(360deg) } }
 
-/* ── Groups ── */
+/* ── Groups (agrupado por fecha) ── */
 .historial-groups {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 1.25rem;
 }
 .group-date {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  font-size: 0.82rem;
+  gap: 0.4rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: #1B5E20;
-  margin-bottom: 0.35rem;
-  padding-bottom: 0.25rem;
-  border-bottom: 1.5px solid #e8f5e9;
-  position: sticky;
-  top: 0;
-  background: #fff;
-  z-index: 1;
-  padding-top: 0.1rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 2px solid #e8f5e9;
 }
 .group-count {
   margin-left: auto;
@@ -466,34 +432,35 @@ onMounted(() => {
   color: #1B5E20;
   font-size: 0.72rem;
   font-weight: 700;
-  padding: 0.15rem 0.45rem;
+  padding: 0.15rem 0.5rem;
   border-radius: 10px;
 }
 .group-items {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.4rem;
 }
 
-/* ── Item (2 filas) ── */
+/* ── Item card (2 filas) ── */
 .hist-item {
   display: flex;
   flex-direction: column;
-  background: #fafffe;
-  border: 1px solid #e8f5e9;
-  border-radius: 10px;
-  padding: 0.5rem 0.6rem;
-  gap: 0.2rem;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 0.65rem 0.75rem;
+  gap: 0.3rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
 }
 .hist-item__top {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.5rem;
 }
 .hist-item__cat {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -514,7 +481,7 @@ onMounted(() => {
   flex-direction: column;
 }
 .hist-item__product {
-  font-size: 0.84rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: #333;
   overflow: hidden;
@@ -522,7 +489,7 @@ onMounted(() => {
   white-space: nowrap;
 }
 .hist-item__sub {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   color: #999;
 }
 .hist-item__price-wrap {
@@ -532,27 +499,27 @@ onMounted(() => {
   flex-shrink: 0;
 }
 .hist-item__price {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 700;
   color: #1B5E20;
   white-space: nowrap;
 }
 .hist-item__unit {
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   color: #999;
 }
 .hist-item__bottom {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 0.15rem;
+  padding-top: 0.2rem;
   border-top: 1px solid #f0f0f0;
 }
 .hist-item__market {
   display: flex;
   align-items: center;
-  gap: 0.2rem;
-  font-size: 0.72rem;
+  gap: 0.25rem;
+  font-size: 0.75rem;
   color: #1B5E20;
   font-weight: 600;
   min-width: 0;
@@ -561,10 +528,10 @@ onMounted(() => {
   white-space: nowrap;
 }
 .hist-item__badge {
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  padding: 0.1rem 0.38rem;
-  border-radius: 4px;
+  padding: 0.12rem 0.4rem;
+  border-radius: 5px;
   text-transform: uppercase;
   flex-shrink: 0;
 }
@@ -580,182 +547,173 @@ onMounted(() => {
 /* ── Responsive 480px ── */
 @media (max-width: 480px) {
   .historial-page {
-    padding: 0.55rem 0.55rem 0;
+    padding: 0.75rem 0.75rem 1.5rem;
   }
   .section-header {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.85rem;
     gap: 0.35rem;
   }
   .section-header h1 {
-    font-size: 1.05rem;
+    font-size: 1.15rem;
   }
   .section-subtitle {
-    font-size: 0.68rem;
+    font-size: 0.7rem;
   }
   .filtros-card {
-    padding: 0.55rem;
+    padding: 0.65rem;
     border-radius: 11px;
-    gap: 0.4rem;
-    margin-bottom: 0.35rem;
+    gap: 0.45rem;
+    margin-bottom: 0.75rem;
   }
   .filtros-fechas {
     gap: 0.35rem;
   }
   .filtro-label {
-    font-size: 0.68rem;
+    font-size: 0.7rem;
   }
   .input--date,
   .input--select {
     padding: 0.4rem 0.5rem;
-    font-size: 0.78rem;
-    min-height: 34px;
+    font-size: 0.8rem;
+    min-height: 36px;
     border-radius: 8px;
   }
   .input--select {
     padding-right: 1.7rem;
   }
   .toggle-pill {
-    padding: 0.32rem 0.3rem;
-    font-size: 0.72rem;
+    padding: 0.35rem 0.35rem;
+    font-size: 0.75rem;
     border-radius: 7px;
   }
   .btn-clear {
-    font-size: 0.68rem;
-    padding: 0.25rem 0.4rem;
+    font-size: 0.7rem;
+    padding: 0.28rem 0.45rem;
   }
   .resumen-bar {
-    font-size: 0.68rem;
-    padding: 0.28rem 0.4rem;
-    margin-bottom: 0.3rem;
-    border-radius: 6px;
-  }
-  .historial-results {
-    padding: 0.45rem;
-    border-radius: 11px;
-    margin-bottom: 0.35rem;
-  }
-  .historial-groups {
-    gap: 0.6rem;
-  }
-  .group-date {
-    font-size: 0.74rem;
-    gap: 0.2rem;
-  }
-  .group-count {
-    font-size: 0.62rem;
-    padding: 0.08rem 0.3rem;
-  }
-  .group-items {
-    gap: 0.2rem;
-  }
-  .hist-item {
-    padding: 0.4rem 0.45rem;
-    gap: 0.15rem;
+    font-size: 0.72rem;
+    padding: 0.35rem 0.5rem;
+    margin-bottom: 0.75rem;
     border-radius: 8px;
   }
+  .historial-groups {
+    gap: 1rem;
+  }
+  .group-date {
+    font-size: 0.78rem;
+    gap: 0.25rem;
+  }
+  .group-count {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.35rem;
+  }
+  .group-items {
+    gap: 0.3rem;
+  }
+  .hist-item {
+    padding: 0.5rem 0.55rem;
+    gap: 0.2rem;
+    border-radius: 10px;
+  }
   .hist-item__top {
-    gap: 0.35rem;
+    gap: 0.4rem;
   }
   .hist-item__cat {
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
   }
   .hist-item__product {
-    font-size: 0.76rem;
+    font-size: 0.8rem;
   }
   .hist-item__sub {
-    font-size: 0.64rem;
+    font-size: 0.66rem;
   }
   .hist-item__price {
-    font-size: 0.84rem;
+    font-size: 0.9rem;
   }
   .hist-item__unit {
-    font-size: 0.58rem;
+    font-size: 0.6rem;
   }
   .hist-item__market {
-    font-size: 0.64rem;
+    font-size: 0.68rem;
   }
   .hist-item__badge {
-    font-size: 0.56rem;
-    padding: 0.08rem 0.28rem;
+    font-size: 0.6rem;
+    padding: 0.08rem 0.3rem;
   }
   .loading-state,
   .empty-state {
-    padding: 1.5rem 0.75rem;
+    padding: 2rem 0.75rem;
   }
   .empty-state p {
-    font-size: 0.8rem;
+    font-size: 0.82rem;
   }
   .empty-state__hint {
-    font-size: 0.7rem !important;
+    font-size: 0.72rem !important;
   }
 }
 
 /* ── Responsive 360px ── */
 @media (max-width: 360px) {
   .historial-page {
-    padding: 0.35rem 0.35rem 0;
+    padding: 0.5rem 0.5rem 1.25rem;
   }
   .section-header h1 {
-    font-size: 0.92rem;
+    font-size: 1rem;
   }
   .section-subtitle {
-    font-size: 0.62rem;
+    font-size: 0.64rem;
   }
   .filtros-card {
-    padding: 0.4rem;
-    gap: 0.3rem;
+    padding: 0.5rem;
+    gap: 0.35rem;
   }
   .filtros-fechas {
     grid-template-columns: 1fr;
-    gap: 0.2rem;
+    gap: 0.25rem;
   }
   .filtro-label {
-    font-size: 0.6rem;
+    font-size: 0.63rem;
   }
   .input--date,
   .input--select {
-    padding: 0.35rem 0.4rem;
-    font-size: 0.72rem;
-    min-height: 32px;
+    padding: 0.38rem 0.4rem;
+    font-size: 0.74rem;
+    min-height: 34px;
   }
   .toggle-pills {
-    gap: 0.15rem;
+    gap: 0.2rem;
   }
   .toggle-pill {
-    padding: 0.25rem 0.22rem;
-    font-size: 0.65rem;
+    padding: 0.28rem 0.25rem;
+    font-size: 0.68rem;
   }
   .resumen-bar {
-    font-size: 0.62rem;
-  }
-  .historial-results {
-    padding: 0.35rem;
-    border-radius: 9px;
+    font-size: 0.65rem;
   }
   .group-date {
-    font-size: 0.66rem;
-  }
-  .hist-item {
-    padding: 0.35rem 0.38rem;
-  }
-  .hist-item__cat {
-    width: 20px;
-    height: 20px;
-  }
-  .hist-item__product {
     font-size: 0.7rem;
   }
+  .hist-item {
+    padding: 0.4rem 0.45rem;
+  }
+  .hist-item__cat {
+    width: 24px;
+    height: 24px;
+  }
+  .hist-item__product {
+    font-size: 0.74rem;
+  }
   .hist-item__price {
-    font-size: 0.76rem;
+    font-size: 0.82rem;
   }
   .hist-item__market {
-    font-size: 0.58rem;
+    font-size: 0.62rem;
   }
   .hist-item__badge {
-    font-size: 0.52rem;
-    padding: 0.06rem 0.2rem;
+    font-size: 0.55rem;
+    padding: 0.06rem 0.22rem;
   }
 }
 </style>
