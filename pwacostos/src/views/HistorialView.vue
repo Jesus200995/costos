@@ -224,6 +224,8 @@ onMounted(() => {
 .main-content {
   padding-top: 60px;
   height: 100vh;
+  height: 100dvh;
+  height: -webkit-fill-available;
   background: #fafafa;
   overflow: hidden;
 }
@@ -234,6 +236,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 60px);
+  height: calc(100dvh - 60px);
   overflow: hidden;
 }
 
