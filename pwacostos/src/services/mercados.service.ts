@@ -1,11 +1,29 @@
 import api from './api'
 import type {
   Categoria, Subcategoria, Producto, Unidad,
-  Mercado, ReporteOut, ReporteDetalleOut, DetalleItem, PrecioHistorialItem
+  Mercado, CatalogoMercado, ReporteOut, ReporteDetalleOut, DetalleItem, PrecioHistorialItem
 } from '@/types'
 
 export const mercadosService = {
-  // Catálogos
+  // Catálogo de mercados
+  async getCatalogoEntidades(): Promise<string[]> {
+    const { data } = await api.get<string[]>('/mercados/catalogo/entidades')
+    return data
+  },
+
+  async getCatalogoMunicipios(entidad: string): Promise<string[]> {
+    const { data } = await api.get<string[]>('/mercados/catalogo/municipios', {
+      params: { entidad }
+    })
+    return data
+  },
+
+  async searchCatalogo(params: { entidad?: string; municipio?: string; nombre?: string; tipo?: string }): Promise<CatalogoMercado[]> {
+    const { data } = await api.get<CatalogoMercado[]>('/mercados/catalogo', { params })
+    return data
+  },
+
+  // Catálogos de productos
   async getCategorias(): Promise<Categoria[]> {
     const { data } = await api.get<Categoria[]>('/mercados/categorias')
     return data
@@ -38,8 +56,8 @@ export const mercadosService = {
     return data
   },
 
-  async createMercado(nombre: string): Promise<Mercado> {
-    const { data } = await api.post<Mercado>('/mercados/', { nombre })
+  async addMercado(catalogo_mercado_id: number): Promise<Mercado> {
+    const { data } = await api.post<Mercado>('/mercados/', { catalogo_mercado_id })
     return data
   },
 

@@ -11,22 +11,11 @@
           <h1>Mis Mercados</h1>
         </div>
 
-        <!-- Agregar mercado -->
-        <div class="add-mercado">
-          <input
-            v-model="newMercadoNombre"
-            type="text"
-            placeholder="Nombre del mercado..."
-            class="input"
-            maxlength="200"
-            @input="newMercadoNombre = toUpper(newMercadoNombre)"
-            @keyup.enter="addMercado"
-          />
-          <button class="btn btn--primary" :disabled="!newMercadoNombre.trim() || addingMercado" @click="addMercado">
-            <Plus :size="18" />
-            <span>Agregar</span>
-          </button>
-        </div>
+        <!-- Botón agregar mercado -->
+        <button class="btn btn--primary btn--full" @click="showCatalogo = true" style="margin-bottom: 1.25rem;">
+          <Search :size="18" />
+          <span>Buscar y agregar mercado</span>
+        </button>
 
         <!-- Lista de mercados -->
         <div v-if="loadingMercados" class="loading-state">
@@ -37,7 +26,7 @@
         <div v-else-if="mercados.length === 0" class="empty-state">
           <Store :size="48" />
           <p>No tienes mercados registrados</p>
-          <p class="empty-state__hint">Agrega un mercado para comenzar a capturar precios</p>
+          <p class="empty-state__hint">Busca un mercado del catálogo para comenzar a capturar precios</p>
         </div>
 
         <div v-else class="mercados-list">
@@ -49,7 +38,13 @@
           >
             <div class="mercado-card__info">
               <h3>{{ m.nombre }}</h3>
-              <span class="mercado-card__date">{{ formatDate(m.created_at) }}</span>
+              <div class="mercado-card__meta">
+                <span class="mercado-card__badge" :class="tipoBadgeClass(m.tipo)">{{ formatTipo(m.tipo) }}</span>
+                <span class="mercado-card__loc">
+                  <MapPin :size="12" />
+                  {{ m.municipio }}, {{ m.entidad }}
+                </span>
+              </div>
             </div>
             <div class="mercado-card__actions">
               <button class="btn-icon btn-icon--danger" @click.stop="deleteMercado(m.id)" title="Eliminar mercado">
@@ -61,8 +56,80 @@
         </div>
       </div>
 
+      <!-- ═══ MODAL CATÁLOGO ═══ -->
+      <div v-if="showCatalogo" class="modal-overlay" @click.self="showCatalogo = false">
+        <div class="modal-catalogo">
+          <div class="modal-header">
+            <h2><Search :size="20" /> Buscar Mercado</h2>
+            <button class="btn-icon" @click="showCatalogo = false"><X :size="22" /></button>
+          </div>
+
+          <!-- Filtros -->
+          <div class="catalogo-filtros">
+            <div class="filter-row">
+              <select v-model="filtroEntidad" class="input" @change="onEntidadChange">
+                <option value="">Todos los estados...</option>
+                <option v-for="e in entidades" :key="e" :value="e">{{ e }}</option>
+              </select>
+            </div>
+            <div class="filter-row">
+              <select v-model="filtroMunicipio" class="input" :disabled="!filtroEntidad" @change="searchCatalogo">
+                <option value="">Todos los municipios...</option>
+                <option v-for="m in municipiosCat" :key="m" :value="m">{{ m }}</option>
+              </select>
+            </div>
+            <div class="filter-row">
+              <input
+                v-model="filtroNombre"
+                type="text"
+                class="input"
+                placeholder="Buscar por nombre..."
+                @input="onNombreInput"
+              />
+            </div>
+          </div>
+
+          <!-- Resultados -->
+          <div v-if="searchingCatalogo" class="loading-state" style="padding: 2rem;">
+            <div class="spinner"></div>
+            <p>Buscando mercados...</p>
+          </div>
+
+          <div v-else-if="catalogoResults.length === 0 && hasSearched" class="empty-state" style="padding: 2rem;">
+            <p>No se encontraron mercados</p>
+          </div>
+
+          <div v-else class="catalogo-results">
+            <div
+              v-for="cm in catalogoResults"
+              :key="cm.id"
+              class="catalogo-item"
+              :class="{ 'catalogo-item--added': isMercadoAdded(cm.id) }"
+              @click="addFromCatalogo(cm)"
+            >
+              <div class="catalogo-item__info">
+                <h4>{{ cm.nombre }}</h4>
+                <div class="catalogo-item__meta">
+                  <span class="catalogo-item__badge" :class="tipoBadgeClass(cm.tipo)">{{ formatTipo(cm.tipo) }}</span>
+                  <span>{{ cm.municipio }}, {{ cm.entidad }}</span>
+                </div>
+                <span v-if="cm.localidad" class="catalogo-item__loc">{{ cm.localidad }}</span>
+              </div>
+              <div class="catalogo-item__action">
+                <span v-if="isMercadoAdded(cm.id)" class="added-label">
+                  <CheckCircle :size="16" /> Agregado
+                </span>
+                <button v-else class="btn btn--primary btn--sm" :disabled="addingId === cm.id">
+                  <Plus :size="16" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ═══ CAPTURA DE PRECIOS ═══ -->
-      <div v-else class="captura-section">
+      <div v-if="selectedMercado" class="captura-section">
         <!-- Header -->
         <div class="captura-header">
           <button class="btn-back" @click="backToMercados">
@@ -72,6 +139,13 @@
           <div class="captura-header__title">
             <Store :size="20" />
             <h2>{{ selectedMercado.nombre }}</h2>
+          </div>
+          <div class="captura-header__meta">
+            <span class="mercado-card__badge" :class="tipoBadgeClass(selectedMercado.tipo)">{{ formatTipo(selectedMercado.tipo) }}</span>
+            <span class="captura-header__loc">
+              <MapPin :size="13" />
+              {{ selectedMercado.municipio }}, {{ selectedMercado.entidad }}
+            </span>
           </div>
         </div>
 
@@ -132,7 +206,7 @@
           </select>
         </div>
 
-        <!-- Formulario de precio (aparece al seleccionar producto) -->
+        <!-- Formulario de precio -->
         <div v-if="selectedProducto" class="precio-form">
           <div class="precio-form__header">
             <div class="precio-form__cat-icon" :class="selectedCategoria === 'AGRICOLA' ? 'cat-icon--agricola' : 'cat-icon--pecuario'">
@@ -174,7 +248,7 @@
           </button>
         </div>
 
-        <!-- Historial de precios registrados -->
+        <!-- Historial -->
         <div v-if="historial.length > 0" class="historial-section">
           <h3 class="historial-title">
             <FileText :size="18" />
@@ -211,12 +285,12 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { mercadosService } from '@/services/mercados.service'
-import type { Mercado, Categoria, Subcategoria, Producto, Unidad, PrecioHistorialItem } from '@/types'
+import type { Mercado, CatalogoMercado, Categoria, Subcategoria, Producto, Unidad, PrecioHistorialItem } from '@/types'
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppToast from '@/components/AppToast.vue'
 import {
-  Store, Plus, Trash2, ChevronRight, ArrowLeft,
+  Store, Search, Trash2, ChevronRight, ArrowLeft, MapPin, X, Plus, CheckCircle,
   Wheat, Beef, Save, FileText
 } from 'lucide-vue-next'
 
@@ -225,11 +299,22 @@ const ui = useUiStore()
 // ── State: Mercados ──
 const mercados = ref<Mercado[]>([])
 const selectedMercado = ref<Mercado | null>(null)
-const newMercadoNombre = ref('')
 const loadingMercados = ref(false)
-const addingMercado = ref(false)
 
-// ── State: Catálogos ──
+// ── State: Catálogo búsqueda ──
+const showCatalogo = ref(false)
+const entidades = ref<string[]>([])
+const municipiosCat = ref<string[]>([])
+const filtroEntidad = ref('')
+const filtroMunicipio = ref('')
+const filtroNombre = ref('')
+const catalogoResults = ref<CatalogoMercado[]>([])
+const searchingCatalogo = ref(false)
+const hasSearched = ref(false)
+const addingId = ref<number | null>(null)
+let searchTimeout: ReturnType<typeof setTimeout> | null = null
+
+// ── State: Catálogos productos ──
 const categorias = ref<Categoria[]>([])
 const subcategorias = ref<Subcategoria[]>([])
 const productos = ref<Producto[]>([])
@@ -249,16 +334,27 @@ const precioInput = ref<HTMLInputElement | null>(null)
 const historial = ref<PrecioHistorialItem[]>([])
 
 // ── Helpers ──
-function toUpper(v: string): string {
-  return v.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+function formatTipo(tipo: string): string {
+  if (tipo === 'MERCADO_PUBLICO') return 'Mercado Público'
+  if (tipo === 'CENTRAL_ABASTO') return 'Central de Abasto'
+  if (tipo === 'TIANGUIS') return 'Tianguis'
+  return tipo
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+function tipoBadgeClass(tipo: string): string {
+  if (tipo === 'MERCADO_PUBLICO') return 'badge--green'
+  if (tipo === 'CENTRAL_ABASTO') return 'badge--purple'
+  return 'badge--teal'
 }
 
 function closeSidebar() {
   if (ui.sidebarOpen) ui.closeSidebar()
+}
+
+function isMercadoAdded(_catalogoId: number): boolean {
+  // Check if we already have a market from this catalog entry
+  // We need to track catalogo IDs — for now check by matching returned mercados
+  return false
 }
 
 // ── Computed ──
@@ -283,24 +379,6 @@ async function loadMercados() {
   }
 }
 
-async function addMercado() {
-  const nombre = newMercadoNombre.value.trim()
-  if (!nombre) return
-  addingMercado.value = true
-  try {
-    const m = await mercadosService.createMercado(nombre)
-    mercados.value.push(m)
-    mercados.value.sort((a, b) => a.nombre.localeCompare(b.nombre))
-    newMercadoNombre.value = ''
-    ui.showToast('Mercado agregado', 'success')
-  } catch (e: any) {
-    const msg = e.response?.data?.detail || 'Error al agregar mercado'
-    ui.showToast(msg, 'error')
-  } finally {
-    addingMercado.value = false
-  }
-}
-
 async function deleteMercado(id: number) {
   if (!confirm('¿Eliminar este mercado? Se eliminarán también sus precios.')) return
   try {
@@ -309,6 +387,69 @@ async function deleteMercado(id: number) {
     ui.showToast('Mercado eliminado', 'success')
   } catch {
     ui.showToast('Error al eliminar mercado', 'error')
+  }
+}
+
+// ── Catálogo búsqueda ──
+async function loadEntidades() {
+  try {
+    entidades.value = await mercadosService.getCatalogoEntidades()
+  } catch { /* silent */ }
+}
+
+async function onEntidadChange() {
+  filtroMunicipio.value = ''
+  municipiosCat.value = []
+  if (filtroEntidad.value) {
+    try {
+      municipiosCat.value = await mercadosService.getCatalogoMunicipios(filtroEntidad.value)
+    } catch { /* silent */ }
+  }
+  searchCatalogo()
+}
+
+function onNombreInput() {
+  if (searchTimeout) clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => searchCatalogo(), 350)
+}
+
+async function searchCatalogo() {
+  const params: Record<string, string> = {}
+  if (filtroEntidad.value) params.entidad = filtroEntidad.value
+  if (filtroMunicipio.value) params.municipio = filtroMunicipio.value
+  if (filtroNombre.value.trim()) params.nombre = filtroNombre.value.trim()
+
+  if (!params.entidad && !params.municipio && !params.nombre) {
+    catalogoResults.value = []
+    hasSearched.value = false
+    return
+  }
+
+  searchingCatalogo.value = true
+  hasSearched.value = true
+  try {
+    catalogoResults.value = await mercadosService.searchCatalogo(params)
+  } catch {
+    ui.showToast('Error al buscar mercados', 'error')
+  } finally {
+    searchingCatalogo.value = false
+  }
+}
+
+async function addFromCatalogo(cm: CatalogoMercado) {
+  if (addingId.value) return
+  addingId.value = cm.id
+  try {
+    const m = await mercadosService.addMercado(cm.id)
+    mercados.value.push(m)
+    mercados.value.sort((a, b) => a.nombre.localeCompare(b.nombre))
+    ui.showToast(`${cm.nombre} agregado`, 'success')
+    showCatalogo.value = false
+  } catch (e: any) {
+    const msg = e.response?.data?.detail || 'Error al agregar mercado'
+    ui.showToast(msg, 'error')
+  } finally {
+    addingId.value = null
   }
 }
 
@@ -335,7 +476,7 @@ function backToMercados() {
   selectedMercado.value = null
 }
 
-// ── Filtros ──
+// ── Filtros catálogo productos ──
 async function onCategoriaChange(catId: string) {
   selectedCategoria.value = catId
   selectedSubcategoria.value = ''
@@ -380,13 +521,11 @@ function onProductoChange() {
   })
 }
 
-// Recargar unidades al cambiar tipo de precio
 watch(tipoPrecio, async () => {
   const subId = selectedSubcategoria.value
   if (!subId) return
   try {
     unidades.value = await mercadosService.getUnidades(subId, tipoPrecio.value)
-    // Resetear unidad si ya no está disponible
     const unitNames = unidades.value.map(u => u.nombre)
     if (!unitNames.includes(unidadValue.value)) {
       unidadValue.value = unitNames.length === 1 ? unitNames[0] : ''
@@ -412,7 +551,6 @@ async function savePrecio() {
     historial.value.unshift(saved)
     ui.showToast(`${saved.producto_nombre} — $${saved.precio.toFixed(2)} guardado`, 'success')
 
-    // Limpiar para el siguiente producto
     precioValue.value = null
     unidadValue.value = unidades.value.length === 1 ? unidades.value[0].nombre : ''
     selectedProductoId.value = ''
@@ -426,6 +564,7 @@ async function savePrecio() {
 
 onMounted(() => {
   loadMercados()
+  loadEntidades()
 })
 </script>
 
@@ -451,13 +590,6 @@ onMounted(() => {
   margin: 0;
 }
 
-/* ── Add Mercado ── */
-.add-mercado {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
-}
-
 .input {
   width: 100%;
   padding: 0.65rem 0.75rem;
@@ -472,8 +604,9 @@ onMounted(() => {
   outline: none;
   border-color: #1B5E20;
 }
-.input--grow {
-  flex: 1;
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .input--price {
   max-width: 120px;
@@ -507,8 +640,10 @@ onMounted(() => {
   width: 100%;
   justify-content: center;
 }
-.btn--icon-only {
-  padding: 0.65rem;
+.btn--sm {
+  padding: 0.4rem 0.65rem;
+  font-size: 0.85rem;
+  border-radius: 8px;
 }
 
 .btn-icon {
@@ -522,16 +657,13 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.2s;
   background: transparent;
+  color: #666;
 }
 .btn-icon--danger {
   color: #c62828;
 }
 .btn-icon--danger:hover {
   background: #ffebee;
-}
-.btn-icon--sm {
-  width: 28px;
-  height: 28px;
 }
 
 /* ── Loading / Empty ── */
@@ -592,22 +724,183 @@ onMounted(() => {
   border-color: #1B5E20;
   box-shadow: 0 2px 8px rgba(27,94,32,0.1);
 }
+.mercado-card__info {
+  min-width: 0;
+  flex: 1;
+}
 .mercado-card__info h3 {
   margin: 0;
   font-size: 0.95rem;
   font-weight: 600;
   color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.mercado-card__date {
-  font-size: 0.8rem;
-  color: #999;
+.mercado-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+  flex-wrap: wrap;
+}
+.mercado-card__loc {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  color: #888;
+}
+.mercado-card__badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 5px;
 }
 .mercado-card__actions {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  flex-shrink: 0;
 }
 .mercado-card__arrow {
+  color: #1B5E20;
+}
+
+/* ── Badges ── */
+.badge--green {
+  background: #e8f5e9;
+  color: #1B5E20;
+}
+.badge--purple {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+.badge--teal {
+  background: #e0f2f1;
+  color: #00695c;
+}
+.badge--blue {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+.badge--orange {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+/* ── Modal Catálogo ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal-catalogo {
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 640px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.25s ease-out;
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem 0.75rem;
+  border-bottom: 1px solid #eee;
+}
+.modal-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1B5E20;
+}
+
+.catalogo-filtros {
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-bottom: 1px solid #eee;
+}
+.filter-row {
+  width: 100%;
+}
+
+.catalogo-results {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0;
+}
+.catalogo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid #f5f5f5;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.catalogo-item:hover {
+  background: #f8fdf8;
+}
+.catalogo-item--added {
+  opacity: 0.55;
+  cursor: default;
+}
+.catalogo-item__info {
+  min-width: 0;
+  flex: 1;
+}
+.catalogo-item__info h4 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #333;
+}
+.catalogo-item__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+  font-size: 0.78rem;
+  color: #888;
+  flex-wrap: wrap;
+}
+.catalogo-item__badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.12rem 0.4rem;
+  border-radius: 4px;
+}
+.catalogo-item__loc {
+  font-size: 0.72rem;
+  color: #aaa;
+}
+.catalogo-item__action {
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+}
+.added-label {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.8rem;
+  font-weight: 600;
   color: #1B5E20;
 }
 
@@ -641,6 +934,20 @@ onMounted(() => {
   margin: 0;
   font-size: 1.2rem;
   font-weight: 700;
+}
+.captura-header__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  flex-wrap: wrap;
+}
+.captura-header__loc {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.82rem;
+  color: #888;
 }
 
 /* ── Toggle Tipo Precio ── */
@@ -689,19 +996,6 @@ onMounted(() => {
   margin-bottom: 0.35rem;
 }
 
-/* Hints de paso */
-.step-hint {
-  font-size: 0.8rem;
-  color: #999;
-  font-style: italic;
-  margin: 0 0 0.5rem;
-  padding-left: 0.25rem;
-}
-.step-hint strong {
-  color: #1B5E20;
-  font-style: normal;
-}
-
 .category-tabs {
   display: flex;
   gap: 0.5rem;
@@ -731,16 +1025,7 @@ onMounted(() => {
   color: #1B5E20;
 }
 
-/* ── Add Product ── */
-.add-product-section {
-  margin-bottom: 1.25rem;
-}
-.add-product-row {
-  display: flex;
-  gap: 0.5rem;
-}
-
-/* ── Precio Form (individual) ── */
+/* ── Precio Form ── */
 .precio-form {
   background: #fff;
   border: 1.5px solid #e8f5e9;
@@ -792,7 +1077,7 @@ onMounted(() => {
   margin-bottom: 0.2rem;
 }
 
-/* ── Historial de precios ── */
+/* ── Historial ── */
 .historial-section {
   margin-top: 1.5rem;
   padding-top: 1.25rem;
@@ -878,15 +1163,6 @@ onMounted(() => {
   text-transform: uppercase;
 }
 
-.badge--blue {
-  background: #e3f2fd;
-  color: #1565c0;
-}
-.badge--orange {
-  background: #fff3e0;
-  color: #e65100;
-}
-
 /* ── Responsive ── */
 @media (max-width: 480px) {
   .precio-form__fields {
@@ -895,6 +1171,9 @@ onMounted(() => {
   .tipo-precio-toggle {
     flex-direction: column;
     align-items: flex-start;
+  }
+  .modal-catalogo {
+    max-height: 90vh;
   }
 }
 </style>

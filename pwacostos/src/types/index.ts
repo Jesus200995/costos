@@ -101,9 +101,31 @@ export interface Unidad {
   nombre: string
 }
 
+export interface CatalogoMercado {
+  id: number
+  market_id: string
+  nombre: string
+  tipo: string
+  entidad: string
+  municipio: string
+  localidad?: string
+  latitud?: number
+  longitud?: number
+  n_establecimientos: number
+  cve_ent?: string
+  cve_mun?: string
+}
+
 export interface Mercado {
   id: number
   nombre: string
+  tipo: string
+  entidad: string
+  municipio: string
+  localidad?: string
+  latitud?: number
+  longitud?: number
+  n_establecimientos: number
   created_at: string
 }
 

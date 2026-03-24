@@ -2,7 +2,8 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import List, Optional
 from app.schemas import (
     CategoriaOut, SubcategoriaOut, ProductoOut, UnidadOut,
-    MercadoCreate, MercadoOut, ReporteCreate, ReporteOut, ReporteDetalleOut, DetalleItemOut,
+    MercadoCreate, MercadoOut, CatalogoMercadoOut,
+    ReporteCreate, ReporteOut, ReporteDetalleOut, DetalleItemOut,
     PrecioIndividualCreate, PrecioHistorialItem
 )
 from app.database import get_db
@@ -60,39 +61,123 @@ def list_unidades(subcategoria_id: str = Query(...), tipo_precio: Optional[str] 
         return [dict(r) for r in cur.fetchall()]
 
 
-# ── Mercados del usuario ──
+# ── Catálogo de mercados (búsqueda) ──
+
+@router.get("/catalogo", response_model=List[CatalogoMercadoOut])
+def search_catalogo_mercados(
+    entidad: Optional[str] = Query(None),
+    municipio: Optional[str] = Query(None),
+    nombre: Optional[str] = Query(None),
+    tipo: Optional[str] = Query(None),
+):
+    with get_db() as conn:
+        cur = conn.cursor()
+        conditions = []
+        params: list = []
+
+        if entidad:
+            conditions.append("entidad = %s")
+            params.append(entidad)
+        if municipio:
+            conditions.append("municipio = %s")
+            params.append(municipio)
+        if nombre:
+            conditions.append("UPPER(nombre) LIKE %s")
+            params.append(f"%{nombre.upper()}%")
+        if tipo:
+            conditions.append("tipo = %s")
+            params.append(tipo)
+
+        where = " AND ".join(conditions) if conditions else "TRUE"
+        cur.execute(
+            f"SELECT id, market_id, nombre, tipo, entidad, municipio, localidad, latitud, longitud, n_establecimientos, cve_ent, cve_mun FROM catalogo_mercados WHERE {where} ORDER BY entidad, municipio, nombre",
+            params,
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+
+@router.get("/catalogo/entidades")
+def list_catalogo_entidades():
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT DISTINCT entidad FROM catalogo_mercados ORDER BY entidad")
+        return [r["entidad"] for r in cur.fetchall()]
+
+
+@router.get("/catalogo/municipios")
+def list_catalogo_municipios(entidad: str = Query(...)):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT DISTINCT municipio FROM catalogo_mercados WHERE entidad = %s ORDER BY municipio",
+            (entidad,),
+        )
+        return [r["municipio"] for r in cur.fetchall()]
+
+
+# ── Mercados del usuario (selección del catálogo) ──
 
 @router.get("/", response_model=List[MercadoOut])
 def list_mercados(user_id: str = Depends(get_current_user_id)):
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute(
-            "SELECT id, nombre, created_at FROM mercados WHERE user_id = %s::uuid ORDER BY nombre",
+            """SELECT m.id, cm.nombre, cm.tipo, cm.entidad, cm.municipio,
+                      cm.localidad, cm.latitud, cm.longitud, cm.n_establecimientos,
+                      m.created_at
+               FROM mercados m
+               JOIN catalogo_mercados cm ON cm.id = m.catalogo_mercado_id
+               WHERE m.user_id = %s::uuid
+               ORDER BY cm.nombre""",
             (user_id,),
         )
         rows = cur.fetchall()
-    return [MercadoOut(id=r["id"], nombre=r["nombre"], created_at=r["created_at"].isoformat()) for r in rows]
+    return [
+        MercadoOut(
+            id=r["id"], nombre=r["nombre"], tipo=r["tipo"],
+            entidad=r["entidad"], municipio=r["municipio"],
+            localidad=r["localidad"], latitud=r["latitud"], longitud=r["longitud"],
+            n_establecimientos=r["n_establecimientos"],
+            created_at=r["created_at"].isoformat(),
+        ) for r in rows
+    ]
 
 
 @router.post("/", response_model=MercadoOut, status_code=201)
-def create_mercado(data: MercadoCreate, user_id: str = Depends(get_current_user_id)):
-    nombre = data.nombre.strip().upper()
-    if len(nombre) < 2:
-        raise HTTPException(400, "El nombre del mercado debe tener al menos 2 caracteres")
+def add_mercado(data: MercadoCreate, user_id: str = Depends(get_current_user_id)):
     with get_db() as conn:
         cur = conn.cursor()
+        # Verificar que el mercado del catálogo existe
         cur.execute(
-            "SELECT id FROM mercados WHERE user_id = %s::uuid AND UPPER(nombre) = %s",
-            (user_id, nombre),
+            "SELECT id, nombre, tipo, entidad, municipio, localidad, latitud, longitud, n_establecimientos FROM catalogo_mercados WHERE id = %s",
+            (data.catalogo_mercado_id,),
+        )
+        cm = cur.fetchone()
+        if not cm:
+            raise HTTPException(404, "Mercado no encontrado en el catálogo")
+
+        # Verificar que no lo tenga ya
+        cur.execute(
+            "SELECT id FROM mercados WHERE user_id = %s::uuid AND catalogo_mercado_id = %s",
+            (user_id, data.catalogo_mercado_id),
         )
         if cur.fetchone():
-            raise HTTPException(409, "Ya tienes un mercado con ese nombre")
+            raise HTTPException(409, "Ya tienes este mercado agregado")
+
         cur.execute(
-            "INSERT INTO mercados (nombre, user_id) VALUES (%s, %s::uuid) RETURNING id, nombre, created_at",
-            (nombre, user_id),
+            """INSERT INTO mercados (nombre, user_id, catalogo_mercado_id, latitud, longitud)
+               VALUES (%s, %s::uuid, %s, %s, %s)
+               RETURNING id, created_at""",
+            (cm["nombre"], user_id, data.catalogo_mercado_id, cm["latitud"], cm["longitud"]),
         )
         r = cur.fetchone()
-    return MercadoOut(id=r["id"], nombre=r["nombre"], created_at=r["created_at"].isoformat())
+    return MercadoOut(
+        id=r["id"], nombre=cm["nombre"], tipo=cm["tipo"],
+        entidad=cm["entidad"], municipio=cm["municipio"],
+        localidad=cm["localidad"], latitud=cm["latitud"], longitud=cm["longitud"],
+        n_establecimientos=cm["n_establecimientos"],
+        created_at=r["created_at"].isoformat(),
+    )
 
 
 @router.delete("/{mercado_id}", status_code=204)

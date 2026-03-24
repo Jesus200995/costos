@@ -113,13 +113,35 @@ class UnidadOut(BaseModel):
     nombre: str
 
 
-class MercadoCreate(BaseModel):
+class CatalogoMercadoOut(BaseModel):
+    id: int
+    market_id: str
     nombre: str
+    tipo: str
+    entidad: str
+    municipio: str
+    localidad: Optional[str] = None
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
+    n_establecimientos: int = 0
+    cve_ent: Optional[str] = None
+    cve_mun: Optional[str] = None
+
+
+class MercadoCreate(BaseModel):
+    catalogo_mercado_id: int
 
 
 class MercadoOut(BaseModel):
     id: int
     nombre: str
+    tipo: str
+    entidad: str
+    municipio: str
+    localidad: Optional[str] = None
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
+    n_establecimientos: int = 0
     created_at: str
 
 
