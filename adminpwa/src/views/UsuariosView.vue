@@ -29,6 +29,11 @@
           <span>Usuarios</span>
         </router-link>
 
+        <router-link to="/propuestas" class="nav-item" :class="{ active: $route.path === '/propuestas' }">
+          <Store :size="18" />
+          <span>Propuestas Mercados</span>
+        </router-link>
+
         <router-link to="/visor" class="nav-item" :class="{ active: $route.path === '/visor' }">
           <Map :size="18" />
           <span>Visor de Mapa</span>
@@ -372,7 +377,7 @@ import {
   Shield, LayoutDashboard, Users, LogOut, Trash2, RefreshCw, AlertTriangle,
   Layers, Search, X, ChevronDown, ChevronLeft, ChevronRight,
   ListFilter, CircleDot, UserCheck, UserX, ShieldCheck,
-  Eye, Pencil, Save, Loader2, CheckCircle, Map
+  Eye, Pencil, Save, Loader2, CheckCircle, Map, Store
 } from 'lucide-vue-next'
 
 const router = useRouter()

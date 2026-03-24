@@ -51,3 +51,27 @@ export interface AuthResponse {
   user: AdminUser
   token: string
 }
+
+export interface MercadoPropuesto {
+  id: number
+  nombre_mercado: string
+  tipo_mercado: string
+  tipo_mercado_otro?: string | null
+  estado: string
+  municipio: string
+  localidad_colonia?: string | null
+  latitud: number
+  longitud: number
+  dias_operacion: string[]
+  horario?: string | null
+  referencia?: string | null
+  observaciones?: string | null
+  status: string
+  created_by: string
+  created_by_nombre?: string | null
+  tipo_capturista?: string | null
+  cac_nombre?: string | null
+  territorio?: string | null
+  ruta?: string | null
+  created_at: string
+}

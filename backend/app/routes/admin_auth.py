@@ -3,7 +3,7 @@ from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional, List
 from app.database import get_db
 from app.auth import hash_password, verify_password, create_token
-import re
+import re, hashlib, uuid
 import jwt
 from app.config import settings
 
@@ -587,3 +587,171 @@ def delete_usuario_pwa(user_id: str, token: str):
         raise HTTPException(404, "Usuario no encontrado")
 
     return {"message": "Usuario PWA eliminado correctamente"}
+
+
+# ═══════════════════════════════════════════════════════════════════
+# MERCADOS PROPUESTOS — GESTIÓN ADMIN
+# ═══════════════════════════════════════════════════════════════════
+
+class MercadoPropuestoAdminOut(BaseModel):
+    id: int
+    nombre_mercado: str
+    tipo_mercado: str
+    tipo_mercado_otro: Optional[str] = None
+    estado: str
+    municipio: str
+    localidad_colonia: Optional[str] = None
+    latitud: float
+    longitud: float
+    dias_operacion: List[str]
+    horario: Optional[str] = None
+    referencia: Optional[str] = None
+    observaciones: Optional[str] = None
+    status: str
+    created_by: str
+    created_by_nombre: Optional[str] = None
+    tipo_capturista: Optional[str] = None
+    cac_nombre: Optional[str] = None
+    territorio: Optional[str] = None
+    ruta: Optional[str] = None
+    created_at: str
+
+
+@router.get("/propuestas", response_model=List[MercadoPropuestoAdminOut])
+def list_propuestas(token: str, status: Optional[str] = None):
+    """Listar mercados propuestos (solo administradores)"""
+    require_admin(token)
+
+    with get_db() as conn:
+        cur = conn.cursor()
+        query = """SELECT mp.id, mp.nombre_mercado, mp.tipo_mercado, mp.tipo_mercado_otro,
+                          mp.estado, mp.municipio, mp.localidad_colonia,
+                          mp.latitud, mp.longitud, mp.dias_operacion,
+                          mp.horario, mp.referencia, mp.observaciones,
+                          mp.status, mp.created_by, mp.tipo_capturista,
+                          mp.cac_nombre, mp.territorio, mp.ruta, mp.created_at,
+                          u.name AS created_by_nombre
+                   FROM mercados_propuestos mp
+                   LEFT JOIN users u ON u.id = mp.created_by"""
+        params = []
+        if status:
+            query += " WHERE mp.status = %s"
+            params.append(status)
+        query += " ORDER BY mp.created_at DESC"
+        cur.execute(query, params)
+        rows = cur.fetchall()
+
+    return [
+        MercadoPropuestoAdminOut(
+            id=r["id"],
+            nombre_mercado=r["nombre_mercado"],
+            tipo_mercado=r["tipo_mercado"],
+            tipo_mercado_otro=r["tipo_mercado_otro"],
+            estado=r["estado"],
+            municipio=r["municipio"],
+            localidad_colonia=r["localidad_colonia"],
+            latitud=r["latitud"],
+            longitud=r["longitud"],
+            dias_operacion=r["dias_operacion"],
+            horario=r["horario"],
+            referencia=r["referencia"],
+            observaciones=r["observaciones"],
+            status=r["status"],
+            created_by=str(r["created_by"]),
+            created_by_nombre=r["created_by_nombre"],
+            tipo_capturista=r["tipo_capturista"],
+            cac_nombre=r["cac_nombre"],
+            territorio=r["territorio"],
+            ruta=r["ruta"],
+            created_at=r["created_at"].isoformat(),
+        )
+        for r in rows
+    ]
+
+
+@router.patch("/propuestas/{propuesta_id}/autorizar")
+def autorizar_propuesta(propuesta_id: int, token: str):
+    """Autorizar mercado propuesto: lo agrega al catálogo y marca como autorizado"""
+    require_admin(token)
+
+    with get_db() as conn:
+        cur = conn.cursor()
+
+        # Obtener la propuesta
+        cur.execute(
+            """SELECT id, nombre_mercado, tipo_mercado, estado, municipio,
+                      localidad_colonia, latitud, longitud, status
+               FROM mercados_propuestos WHERE id = %s""",
+            (propuesta_id,),
+        )
+        prop = cur.fetchone()
+        if not prop:
+            raise HTTPException(404, "Propuesta no encontrada")
+        if prop["status"] != "pendiente_autorizacion":
+            raise HTTPException(400, f"La propuesta ya fue {prop['status']}")
+
+        # Generar market_id único
+        raw = f"{prop['nombre_mercado']}-{prop['estado']}-{prop['municipio']}-{uuid.uuid4().hex[:8]}"
+        market_id = "mkt_" + hashlib.md5(raw.encode()).hexdigest()[:10]
+
+        # Mapeo de tipos
+        tipo_map = {
+            "MERCADO_PUBLICO": "MERCADO PÚBLICO",
+            "TIANGUIS": "TIANGUIS",
+            "CENTRAL_ABASTO": "CENTRAL DE ABASTO",
+            "OTRO": "OTRO",
+        }
+        tipo = tipo_map.get(prop["tipo_mercado"], prop["tipo_mercado"])
+
+        # Insertar en catalogo_mercados
+        cur.execute(
+            """INSERT INTO catalogo_mercados
+                   (market_id, nombre, tipo, entidad, municipio, localidad, latitud, longitud)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+               RETURNING id""",
+            (
+                market_id,
+                prop["nombre_mercado"],
+                tipo,
+                prop["estado"],
+                prop["municipio"],
+                prop["localidad_colonia"],
+                prop["latitud"],
+                prop["longitud"],
+            ),
+        )
+        cat_row = cur.fetchone()
+
+        # Marcar propuesta como autorizada
+        cur.execute(
+            "UPDATE mercados_propuestos SET status = 'autorizado', updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+            (propuesta_id,),
+        )
+
+    return {
+        "message": "Mercado autorizado y agregado al catálogo",
+        "catalogo_id": cat_row["id"],
+        "market_id": market_id,
+    }
+
+
+@router.patch("/propuestas/{propuesta_id}/rechazar")
+def rechazar_propuesta(propuesta_id: int, token: str):
+    """Rechazar mercado propuesto"""
+    require_admin(token)
+
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT status FROM mercados_propuestos WHERE id = %s", (propuesta_id,))
+        prop = cur.fetchone()
+        if not prop:
+            raise HTTPException(404, "Propuesta no encontrada")
+        if prop["status"] != "pendiente_autorizacion":
+            raise HTTPException(400, f"La propuesta ya fue {prop['status']}")
+
+        cur.execute(
+            "UPDATE mercados_propuestos SET status = 'rechazado', updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+            (propuesta_id,),
+        )
+
+    return {"message": "Propuesta rechazada"}

@@ -29,6 +29,11 @@
           <span>Usuarios</span>
         </router-link>
 
+        <router-link to="/propuestas" class="nav-item" :class="{ active: $route.path === '/propuestas' }">
+          <Store :size="18" />
+          <span>Propuestas Mercados</span>
+        </router-link>
+
         <router-link to="/visor" class="nav-item" :class="{ active: $route.path === '/visor' }">
           <Map :size="18" />
           <span>Visor de Mapa</span>
@@ -74,7 +79,7 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import {
-  Layers, LayoutDashboard, Users, LogOut, Map
+  Layers, LayoutDashboard, Users, LogOut, Map, Store
 } from 'lucide-vue-next'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'

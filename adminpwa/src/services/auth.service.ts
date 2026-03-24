@@ -1,5 +1,5 @@
 import api from './api'
-import type { LoginPayload, RegisterPayload, AuthResponse, AdminUser, PWAUser } from '@/types'
+import type { LoginPayload, RegisterPayload, AuthResponse, AdminUser, PWAUser, MercadoPropuesto } from '@/types'
 
 export const authService = {
   async login(data: LoginPayload): Promise<AuthResponse> {
@@ -53,5 +53,22 @@ export const authService = {
 
   async deleteUsuarioPWA(userId: string, token: string): Promise<void> {
     await api.delete(`/admin/usuarios-pwa/${userId}`, { params: { token } })
+  },
+
+  // ── Mercados propuestos ──
+
+  async getPropuestas(token: string, status?: string): Promise<MercadoPropuesto[]> {
+    const params: Record<string, string> = { token }
+    if (status) params.status = status
+    const res = await api.get('/admin/propuestas', { params })
+    return res.data
+  },
+
+  async autorizarPropuesta(id: number, token: string): Promise<void> {
+    await api.patch(`/admin/propuestas/${id}/autorizar`, null, { params: { token } })
+  },
+
+  async rechazarPropuesta(id: number, token: string): Promise<void> {
+    await api.patch(`/admin/propuestas/${id}/rechazar`, null, { params: { token } })
   }
 }

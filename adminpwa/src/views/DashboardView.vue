@@ -39,6 +39,16 @@
           <span>Usuarios</span>
         </router-link>
 
+        <router-link
+          v-if="auth.isAdmin"
+          to="/propuestas"
+          class="nav-item"
+          :class="{ active: $route.path === '/propuestas' }"
+        >
+          <Store :size="18" />
+          <span>Propuestas Mercados</span>
+        </router-link>
+
         <router-link to="/visor" class="nav-item" :class="{ active: $route.path === '/visor' }">
           <Map :size="18" />
           <span>Visor de Mapa</span>
@@ -156,7 +166,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import {
   Layers, LayoutDashboard, Users, LogOut, User, CheckCircle,
-  Calendar, UserCircle, Zap, Map
+  Calendar, UserCircle, Zap, Map, Store
 } from 'lucide-vue-next'
 
 const router = useRouter()
