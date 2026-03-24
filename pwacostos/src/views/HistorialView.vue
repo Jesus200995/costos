@@ -217,11 +217,28 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* ── Layout (mismo patrón que MercadosView — scroll natural) ── */
+/* ── Layout ── */
+.main-content {
+  padding-top: 60px;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: #fafafa;
+  overflow: hidden;
+}
 .historial-page {
   max-width: 640px;
+  width: 100%;
   margin: 0 auto;
-  padding: 1rem 1rem 2rem;
+  padding: 1rem 1rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.historial-top {
+  flex-shrink: 0;
 }
 
 /* ── Header ── */
@@ -374,9 +391,18 @@ onMounted(() => {
   color: #a5d6a7;
 }
 
-/* ── Resultados ── */
+/* ── Resultados (recuadro con scroll) ── */
 .historial-results {
-  /* sin overflow ni altura fija — scroll natural de página */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #fff;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 14px;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
 /* ── Loading / Empty ── */
@@ -547,7 +573,7 @@ onMounted(() => {
 /* ── Responsive 480px ── */
 @media (max-width: 480px) {
   .historial-page {
-    padding: 0.75rem 0.75rem 1.5rem;
+    padding: 0.75rem 0.75rem 0.35rem;
   }
   .section-header {
     margin-bottom: 0.85rem;
@@ -595,6 +621,10 @@ onMounted(() => {
     padding: 0.35rem 0.5rem;
     margin-bottom: 0.75rem;
     border-radius: 8px;
+  }
+  .historial-results {
+    padding: 0.5rem;
+    border-radius: 11px;
   }
   .historial-groups {
     gap: 1rem;
@@ -657,7 +687,7 @@ onMounted(() => {
 /* ── Responsive 360px ── */
 @media (max-width: 360px) {
   .historial-page {
-    padding: 0.5rem 0.5rem 1.25rem;
+    padding: 0.5rem 0.5rem 0.25rem;
   }
   .section-header h1 {
     font-size: 1rem;
@@ -691,6 +721,10 @@ onMounted(() => {
   }
   .resumen-bar {
     font-size: 0.65rem;
+  }
+  .historial-results {
+    padding: 0.4rem;
+    border-radius: 9px;
   }
   .group-date {
     font-size: 0.7rem;
