@@ -12,33 +12,37 @@
 
         <!-- Filtros -->
         <div class="filtros-card">
-          <div class="filtros-row">
+          <div class="filtros-fechas">
             <div class="filtro-group">
-              <label class="filtro-label">Desde</label>
-              <input v-model="fechaDesde" type="date" class="input input--sm" @change="loadHistorial" />
-            </div>
-            <div class="filtro-group">
-              <label class="filtro-label">Hasta</label>
-              <input v-model="fechaHasta" type="date" class="input input--sm" @change="loadHistorial" />
-            </div>
-          </div>
-          <div class="filtros-row">
-            <div class="filtro-group filtro-group--full">
-              <label class="filtro-label">Mercado</label>
-              <select v-model="filtroMercado" class="input input--sm" @change="applyFilters">
-                <option value="">Todos los mercados</option>
-                <option v-for="m in mercadosUnicos" :key="m" :value="m">{{ m }}</option>
-              </select>
-            </div>
-          </div>
-          <div class="filtros-row">
-            <div class="filtro-group filtro-group--full">
-              <label class="filtro-label">Tipo</label>
-              <div class="toggle-pills toggle-pills--sm">
-                <button class="toggle-pill toggle-pill--sm" :class="{ 'toggle-pill--active': filtroTipo === '' }" @click="filtroTipo = ''; applyFilters()">Todos</button>
-                <button class="toggle-pill toggle-pill--sm" :class="{ 'toggle-pill--active': filtroTipo === 'MENUDEO' }" @click="filtroTipo = 'MENUDEO'; applyFilters()">Menudeo</button>
-                <button class="toggle-pill toggle-pill--sm" :class="{ 'toggle-pill--active': filtroTipo === 'MAYOREO' }" @click="filtroTipo = 'MAYOREO'; applyFilters()">Mayoreo</button>
+              <label class="filtro-label">
+                <Calendar :size="12" /> Desde
+              </label>
+              <div class="date-wrapper">
+                <input v-model="fechaDesde" type="date" class="input input--date" @change="loadHistorial" />
               </div>
+            </div>
+            <div class="filtro-group">
+              <label class="filtro-label">
+                <Calendar :size="12" /> Hasta
+              </label>
+              <div class="date-wrapper">
+                <input v-model="fechaHasta" type="date" class="input input--date" @change="loadHistorial" />
+              </div>
+            </div>
+          </div>
+          <div class="filtro-group">
+            <label class="filtro-label">Mercado</label>
+            <select v-model="filtroMercado" class="input input--select" @change="applyFilters">
+              <option value="">Todos los mercados</option>
+              <option v-for="m in mercadosUnicos" :key="m" :value="m">{{ m }}</option>
+            </select>
+          </div>
+          <div class="filtro-group">
+            <label class="filtro-label">Tipo</label>
+            <div class="toggle-pills">
+              <button class="toggle-pill" :class="{ 'toggle-pill--active': filtroTipo === '' }" @click="filtroTipo = ''; applyFilters()">Todos</button>
+              <button class="toggle-pill" :class="{ 'toggle-pill--active': filtroTipo === 'MENUDEO' }" @click="filtroTipo = 'MENUDEO'; applyFilters()">Menudeo</button>
+              <button class="toggle-pill" :class="{ 'toggle-pill--active': filtroTipo === 'MAYOREO' }" @click="filtroTipo = 'MAYOREO'; applyFilters()">Mayoreo</button>
             </div>
           </div>
           <button v-if="fechaDesde || fechaHasta || filtroMercado || filtroTipo" class="btn-clear" @click="clearFilters">
@@ -78,20 +82,24 @@
             </div>
             <div class="group-items">
               <div v-for="h in group.items" :key="h.id" class="hist-item">
-                <div class="hist-item__cat" :class="h.categoria_id === 'AGRICOLA' ? 'cat--agricola' : 'cat--pecuario'">
-                  <Wheat v-if="h.categoria_id === 'AGRICOLA'" :size="12" />
-                  <Beef v-else :size="12" />
+                <div class="hist-item__top">
+                  <div class="hist-item__cat" :class="h.categoria_id === 'AGRICOLA' ? 'cat--agricola' : 'cat--pecuario'">
+                    <Wheat v-if="h.categoria_id === 'AGRICOLA'" :size="13" />
+                    <Beef v-else :size="13" />
+                  </div>
+                  <div class="hist-item__info">
+                    <span class="hist-item__product">{{ h.producto_nombre }}</span>
+                    <span class="hist-item__sub">{{ h.subcategoria_nombre }}</span>
+                  </div>
+                  <div class="hist-item__price-wrap">
+                    <span class="hist-item__price">${{ h.precio.toFixed(2) }}</span>
+                    <span class="hist-item__unit">{{ h.unidad }}</span>
+                  </div>
                 </div>
-                <div class="hist-item__info">
-                  <span class="hist-item__product">{{ h.producto_nombre }}</span>
-                  <span class="hist-item__sub">{{ h.subcategoria_nombre }}</span>
+                <div class="hist-item__bottom">
                   <span class="hist-item__market">
                     <Store :size="11" /> {{ h.mercado_nombre }}
                   </span>
-                </div>
-                <div class="hist-item__right">
-                  <span class="hist-item__price">${{ h.precio.toFixed(2) }}</span>
-                  <span class="hist-item__unit">{{ h.unidad }}</span>
                   <span class="hist-item__badge" :class="h.tipo_precio === 'MENUDEO' ? 'badge--blue' : 'badge--orange'">
                     {{ h.tipo_precio === 'MENUDEO' ? 'Men' : 'May' }}
                   </span>
@@ -226,51 +234,101 @@ onMounted(() => {
   background: #fafafa;
   border: 1.5px solid #e8e8e8;
   border-radius: 14px;
-  padding: 0.75rem;
+  padding: 0.85rem;
   margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
   overflow: hidden;
 }
-.filtros-row {
-  display: flex;
+.filtros-fechas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
-  margin-bottom: 0.5rem;
-  min-width: 0;
-}
-.filtros-row:last-of-type {
-  margin-bottom: 0;
 }
 .filtro-group {
-  flex: 1;
   min-width: 0;
 }
-.filtro-group--full {
-  flex: 1;
-}
 .filtro-label {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   font-size: 0.75rem;
   font-weight: 600;
   color: #888;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.25rem;
 }
-.input--sm {
-  padding: 0.45rem 0.6rem;
+
+/* ── Inputs & Date ── */
+.input {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  color: #333;
+  background: #fff;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+  min-width: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.input:focus {
+  border-color: #1B5E20;
+  outline: none;
+}
+.date-wrapper {
+  position: relative;
+}
+.input--date {
+  padding: 0.55rem 0.7rem;
   font-size: 0.85rem;
+  min-height: 40px;
+  color-scheme: light;
 }
-.toggle-pills--sm {
+.input--date::-webkit-calendar-picker-indicator {
+  opacity: 0.6;
+  cursor: pointer;
+}
+.input--select {
+  padding: 0.55rem 0.7rem;
+  font-size: 0.85rem;
+  min-height: 40px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 0.6rem center;
+  padding-right: 2rem;
+}
+
+/* ── Toggle pills ── */
+.toggle-pills {
   display: flex;
-  gap: 0.25rem;
+  gap: 0.3rem;
 }
-.toggle-pill--sm {
-  padding: 0.35rem 0.6rem;
-  font-size: 0.78rem;
+.toggle-pill {
+  flex: 1;
+  padding: 0.45rem 0.5rem;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+  white-space: nowrap;
 }
+.toggle-pill--active {
+  background: #1B5E20;
+  color: #fff;
+  border-color: #1B5E20;
+}
+
 .btn-clear {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  margin-top: 0.5rem;
-  padding: 0.3rem 0.6rem;
+  padding: 0.35rem 0.6rem;
   border: none;
   background: #ffebee;
   color: #c62828;
@@ -278,6 +336,7 @@ onMounted(() => {
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
+  align-self: flex-start;
 }
 
 /* ── Resumen ── */
@@ -290,6 +349,7 @@ onMounted(() => {
   font-size: 0.8rem;
   color: #777;
   margin-bottom: 0.75rem;
+  flex-wrap: wrap;
 }
 .resumen-sep {
   color: #ddd;
@@ -357,19 +417,24 @@ onMounted(() => {
   gap: 0.35rem;
 }
 
-/* ── Item ── */
+/* ── Item (2-row layout) ── */
 .hist-item {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  flex-direction: column;
   background: #fff;
   border: 1.5px solid #f0f0f0;
   border-radius: 10px;
   padding: 0.6rem 0.7rem;
+  gap: 0.3rem;
+}
+.hist-item__top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 .hist-item__cat {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -402,6 +467,29 @@ onMounted(() => {
   font-size: 0.72rem;
   color: #999;
 }
+.hist-item__price-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+.hist-item__price {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1B5E20;
+  white-space: nowrap;
+}
+.hist-item__unit {
+  font-size: 0.68rem;
+  color: #999;
+}
+.hist-item__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.25rem;
+  border-top: 1px solid #f5f5f5;
+}
 .hist-item__market {
   display: flex;
   align-items: center;
@@ -409,30 +497,18 @@ onMounted(() => {
   font-size: 0.72rem;
   color: #1B5E20;
   font-weight: 600;
-  margin-top: 0.1rem;
-}
-.hist-item__right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.1rem;
-  flex-shrink: 0;
-}
-.hist-item__price {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #1B5E20;
-}
-.hist-item__unit {
-  font-size: 0.7rem;
-  color: #999;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .hist-item__badge {
   font-size: 0.65rem;
   font-weight: 700;
-  padding: 0.1rem 0.35rem;
+  padding: 0.12rem 0.4rem;
   border-radius: 4px;
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 .badge--blue {
   background: #e3f2fd;
@@ -443,43 +519,6 @@ onMounted(() => {
   color: #e65100;
 }
 
-/* ── Toggle pills ── */
-.toggle-pill {
-  padding: 0.45rem 0.85rem;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 8px;
-  background: #fff;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #888;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.toggle-pill--active {
-  background: #1B5E20;
-  color: #fff;
-  border-color: #1B5E20;
-}
-
-/* ── Inputs ── */
-.input {
-  width: 100%;
-  padding: 0.65rem 0.85rem;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 10px;
-  font-size: 0.9rem;
-  color: #333;
-  background: #fff;
-  transition: border-color 0.15s;
-  box-sizing: border-box;
-  max-width: 100%;
-  min-width: 0;
-}
-.input:focus {
-  border-color: #1B5E20;
-  outline: none;
-}
-
 /* ── Nav ── */
 .main-content {
   padding-top: 60px;
@@ -487,79 +526,171 @@ onMounted(() => {
   background: #fafafa;
 }
 
-/* ── Responsive ── */
-@media (max-width: 400px) {
+/* ── Responsive 480px ── */
+@media (max-width: 480px) {
   .historial-page {
-    padding: 0.75rem 0.75rem 2rem;
+    padding: 0.65rem 0.65rem 2rem;
+  }
+  .section-header {
+    margin-bottom: 0.85rem;
+    gap: 0.4rem;
   }
   .section-header h1 {
     font-size: 1.1rem;
   }
   .filtros-card {
-    padding: 0.5rem;
+    padding: 0.6rem;
+    border-radius: 11px;
+    gap: 0.5rem;
   }
-  .filtros-row {
-    flex-direction: column;
-    gap: 0.35rem;
+  .filtros-fechas {
+    gap: 0.4rem;
   }
   .filtro-label {
     font-size: 0.7rem;
   }
-  .input--sm {
-    padding: 0.4rem 0.5rem;
-    font-size: 0.78rem;
+  .input--date,
+  .input--select {
+    padding: 0.45rem 0.55rem;
+    font-size: 0.8rem;
+    min-height: 36px;
+    border-radius: 8px;
   }
-  .toggle-pill--sm {
-    padding: 0.3rem 0.45rem;
+  .input--select {
+    padding-right: 1.8rem;
+  }
+  .toggle-pill {
+    padding: 0.35rem 0.35rem;
+    font-size: 0.73rem;
+    border-radius: 7px;
+  }
+  .btn-clear {
     font-size: 0.72rem;
+    padding: 0.3rem 0.5rem;
   }
   .resumen-bar {
     font-size: 0.72rem;
+    padding: 0.35rem;
     gap: 0.25rem;
-    flex-wrap: wrap;
-    justify-content: center;
+  }
+  .historial-groups {
+    gap: 0.75rem;
+  }
+  .group-date {
+    font-size: 0.75rem;
+    gap: 0.25rem;
+  }
+  .group-count {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.35rem;
+  }
+  .group-items {
+    gap: 0.25rem;
   }
   .hist-item {
     padding: 0.5rem 0.55rem;
-    gap: 0.35rem;
+    gap: 0.25rem;
+    border-radius: 9px;
+  }
+  .hist-item__top {
+    gap: 0.4rem;
   }
   .hist-item__cat {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
   }
   .hist-item__product {
     font-size: 0.78rem;
   }
-  .hist-item__sub,
-  .hist-item__market {
-    font-size: 0.68rem;
+  .hist-item__sub {
+    font-size: 0.66rem;
   }
   .hist-item__price {
     font-size: 0.85rem;
   }
   .hist-item__unit {
-    font-size: 0.65rem;
+    font-size: 0.62rem;
+  }
+  .hist-item__market {
+    font-size: 0.66rem;
   }
   .hist-item__badge {
     font-size: 0.6rem;
+    padding: 0.1rem 0.3rem;
   }
-  .group-date {
-    font-size: 0.75rem;
+  .loading-state,
+  .empty-state {
+    padding: 2rem 1rem;
+  }
+  .empty-state p {
+    font-size: 0.82rem;
+  }
+  .empty-state__hint {
+    font-size: 0.75rem !important;
   }
 }
 
-@media (max-width: 340px) {
-  .section-header h1 {
-    font-size: 1rem;
+/* ── Responsive 360px ── */
+@media (max-width: 360px) {
+  .historial-page {
+    padding: 0.5rem 0.5rem 1.5rem;
   }
-  .toggle-pills--sm {
-    flex-wrap: wrap;
+  .section-header h1 {
+    font-size: 0.95rem;
+  }
+  .filtros-card {
+    padding: 0.5rem;
+    gap: 0.4rem;
+  }
+  .filtros-fechas {
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
+  }
+  .filtro-label {
+    font-size: 0.65rem;
+  }
+  .input--date,
+  .input--select {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.75rem;
+    min-height: 34px;
+  }
+  .toggle-pills {
+    gap: 0.2rem;
+  }
+  .toggle-pill {
+    padding: 0.3rem 0.3rem;
+    font-size: 0.68rem;
+  }
+  .resumen-bar {
+    font-size: 0.65rem;
+  }
+  .group-date {
+    font-size: 0.7rem;
+  }
+  .hist-item {
+    padding: 0.4rem 0.45rem;
+  }
+  .hist-item__cat {
+    width: 22px;
+    height: 22px;
   }
   .hist-item__product {
     font-size: 0.72rem;
   }
+  .hist-item__sub {
+    font-size: 0.6rem;
+  }
   .hist-item__price {
     font-size: 0.78rem;
+  }
+  .hist-item__market {
+    font-size: 0.6rem;
+  }
+  .hist-item__badge {
+    font-size: 0.56rem;
+    padding: 0.08rem 0.25rem;
   }
 }
 </style>
