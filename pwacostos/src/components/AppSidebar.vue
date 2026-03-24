@@ -35,6 +35,10 @@
           <ShoppingBag :size="20" />
           <span>Mercados</span>
         </router-link>
+        <router-link to="/historial" class="sidebar__link" @click="ui.closeSidebar()">
+          <ClipboardList :size="20" />
+          <span>Historial</span>
+        </router-link>
       </nav>
 
       <div class="sidebar__divider"></div>
@@ -56,7 +60,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import {
-  X, Home, ShoppingBag, LogOut, UserCircle
+  X, Home, ShoppingBag, LogOut, UserCircle, ClipboardList
 } from 'lucide-vue-next'
 
 const router = useRouter()

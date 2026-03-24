@@ -5,7 +5,8 @@ from app.schemas import (
     MercadoCreate, MercadoOut, CatalogoMercadoOut,
     ReporteCreate, ReporteOut, ReporteDetalleOut, DetalleItemOut,
     PrecioIndividualCreate, PrecioHistorialItem,
-    MercadoPropuestoCreate, MercadoPropuestoOut
+    MercadoPropuestoCreate, MercadoPropuestoOut,
+    HistorialGeneralItem
 )
 from app.database import get_db
 from app.auth import get_current_user_id
@@ -421,6 +422,92 @@ def list_precios_historial(mercado_id: int = Query(...), user_id: str = Depends(
     return [
         PrecioHistorialItem(
             id=r["id"],
+            producto_id=r["producto_id"],
+            producto_nombre=r["producto_nombre"],
+            subcategoria_nombre=r["subcategoria_nombre"],
+            categoria_id=r["categoria_id"],
+            precio=float(r["precio"]),
+            unidad=r["unidad"],
+            tipo_precio=r["tipo_precio"],
+            fecha=r["fecha"].isoformat(),
+            created_at=r["created_at"].isoformat(),
+        )
+        for r in rows
+    ]
+
+
+# ── Mercados recientes ──
+
+@router.get("/recientes", response_model=List[MercadoOut])
+def list_mercados_recientes(user_id: str = Depends(get_current_user_id)):
+    """Returns all markets where user has captured prices, sorted by most recently used."""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """SELECT m.id, cm.nombre, cm.tipo, cm.entidad, cm.municipio,
+                      cm.localidad, cm.latitud, cm.longitud, cm.n_establecimientos,
+                      m.created_at, MAX(r.created_at) AS last_used
+               FROM mercados m
+               JOIN catalogo_mercados cm ON cm.id = m.catalogo_mercado_id
+               JOIN reportes_precios r ON r.mercado_id = m.id
+               WHERE m.user_id = %s::uuid
+               GROUP BY m.id, cm.nombre, cm.tipo, cm.entidad, cm.municipio,
+                        cm.localidad, cm.latitud, cm.longitud, cm.n_establecimientos,
+                        m.created_at
+               ORDER BY last_used DESC""",
+            (user_id,),
+        )
+        rows = cur.fetchall()
+    return [
+        MercadoOut(
+            id=r["id"], nombre=r["nombre"], tipo=r["tipo"],
+            entidad=r["entidad"], municipio=r["municipio"],
+            localidad=r["localidad"], latitud=r["latitud"], longitud=r["longitud"],
+            n_establecimientos=r["n_establecimientos"],
+            created_at=r["created_at"].isoformat(),
+        ) for r in rows
+    ]
+
+
+# ── Historial general ──
+
+@router.get("/historial-general", response_model=List[HistorialGeneralItem])
+def list_historial_general(
+    fecha_desde: Optional[str] = Query(None),
+    fecha_hasta: Optional[str] = Query(None),
+    user_id: str = Depends(get_current_user_id),
+):
+    with get_db() as conn:
+        cur = conn.cursor()
+        query = """SELECT d.id, r.mercado_id, cm.nombre as mercado_nombre,
+                          cm.entidad as mercado_entidad, cm.municipio as mercado_municipio,
+                          d.producto_id, p.nombre as producto_nombre,
+                          s.nombre as subcategoria_nombre, s.categoria_id,
+                          d.precio, d.unidad, r.tipo_precio, r.fecha, r.created_at
+                   FROM detalle_precios d
+                   JOIN reportes_precios r ON r.id = d.reporte_id
+                   JOIN productos p ON p.id = d.producto_id
+                   JOIN subcategorias s ON s.id = p.subcategoria_id
+                   JOIN mercados m ON m.id = r.mercado_id
+                   JOIN catalogo_mercados cm ON cm.id = m.catalogo_mercado_id
+                   WHERE r.user_id = %s::uuid"""
+        params: list = [user_id]
+        if fecha_desde:
+            query += " AND r.fecha >= %s"
+            params.append(fecha_desde)
+        if fecha_hasta:
+            query += " AND r.fecha <= %s"
+            params.append(fecha_hasta)
+        query += " ORDER BY r.created_at DESC"
+        cur.execute(query, params)
+        rows = cur.fetchall()
+    return [
+        HistorialGeneralItem(
+            id=r["id"],
+            mercado_id=r["mercado_id"],
+            mercado_nombre=r["mercado_nombre"],
+            mercado_entidad=r["mercado_entidad"],
+            mercado_municipio=r["mercado_municipio"],
             producto_id=r["producto_id"],
             producto_nombre=r["producto_nombre"],
             subcategoria_nombre=r["subcategoria_nombre"],

@@ -33,6 +33,12 @@ const router = createRouter({
       name: 'mercados',
       component: () => import('@/views/MercadosView.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/historial',
+      name: 'historial',
+      component: () => import('@/views/HistorialView.vue'),
+      meta: { requiresAuth: true }
     }
   ]
 })

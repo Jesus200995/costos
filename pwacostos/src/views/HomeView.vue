@@ -367,4 +367,169 @@ onMounted(() => {
   font-size: 0.75rem;
   color: #aaa;
 }
+
+/* ── Responsive: pantallas pequeñas ── */
+@media (max-width: 480px) {
+  .home-header {
+    margin-bottom: 16px;
+    padding-top: 4px;
+  }
+  .home-welcome__title {
+    font-size: 1.1rem;
+  }
+  .home-welcome__subtitle {
+    font-size: 0.72rem;
+  }
+  .home-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 13px;
+  }
+  .stats-grid {
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .stat-card {
+    padding: 10px;
+    gap: 8px;
+    border-radius: 10px;
+  }
+  .stat-card__icon {
+    width: 34px;
+    height: 34px;
+  }
+  .stat-card__value {
+    font-size: 1rem;
+  }
+  .stat-card__label {
+    font-size: 0.65rem;
+  }
+  .home-section {
+    margin-bottom: 18px;
+  }
+  .home-section__title {
+    font-size: 0.85rem;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .quick-actions {
+    gap: 8px;
+  }
+  .quick-action {
+    padding: 14px 10px;
+    gap: 8px;
+    font-size: 0.76rem;
+    border-radius: 10px;
+  }
+  .quick-action__icon {
+    width: 38px;
+    height: 38px;
+  }
+  .activity-card {
+    padding: 9px 10px;
+    border-radius: 10px;
+  }
+  .activity-card__icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+  }
+  .activity-card__mercado {
+    font-size: 0.78rem;
+  }
+  .activity-card__meta {
+    font-size: 0.68rem;
+  }
+  .activity-badge {
+    font-size: 0.58rem;
+    padding: 2px 5px;
+  }
+  .activity-card__date {
+    font-size: 0.67rem;
+  }
+  .empty-state {
+    padding: 24px 14px;
+  }
+  .empty-state__text {
+    font-size: 0.82rem;
+  }
+  .empty-state__hint {
+    font-size: 0.72rem;
+  }
+  .profile-modal__avatar {
+    width: 56px;
+    height: 56px;
+    font-size: 1.2rem;
+  }
+  .profile-modal h3 {
+    font-size: 0.95rem;
+  }
+  .profile-modal p {
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .home-welcome__title {
+    font-size: 0.95rem;
+  }
+  .home-welcome__subtitle {
+    font-size: 0.65rem;
+  }
+  .home-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 11px;
+  }
+  .stats-grid {
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .stat-card {
+    padding: 8px;
+    gap: 6px;
+  }
+  .stat-card__icon {
+    width: 28px;
+    height: 28px;
+  }
+  .stat-card__value {
+    font-size: 0.88rem;
+  }
+  .stat-card__label {
+    font-size: 0.6rem;
+  }
+  .home-section__title {
+    font-size: 0.78rem;
+  }
+  .quick-action {
+    padding: 10px 8px;
+    gap: 6px;
+    font-size: 0.7rem;
+  }
+  .quick-action__icon {
+    width: 32px;
+    height: 32px;
+  }
+  .activity-card {
+    padding: 7px 8px;
+  }
+  .activity-card__icon {
+    width: 26px;
+    height: 26px;
+  }
+  .activity-card__mercado {
+    font-size: 0.72rem;
+  }
+  .activity-card__meta {
+    font-size: 0.62rem;
+  }
+  .activity-badge {
+    font-size: 0.54rem;
+    padding: 1px 4px;
+  }
+  .activity-card__date {
+    font-size: 0.6rem;
+  }
+}
 </style>

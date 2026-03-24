@@ -4,32 +4,59 @@
     <AppSidebar />
 
     <main class="main-content" @click="closeSidebar">
-      <!-- ═══ MIS MERCADOS ═══ -->
+      <!-- ═══ MIS MERCADOS (con tabs) ═══ -->
       <div v-if="!selectedMercado" class="mercados-section">
         <div class="section-header">
           <Store :size="24" />
           <h1>Mis Mercados</h1>
         </div>
 
-        <!-- Botón agregar mercado -->
-        <button class="btn btn--primary btn--full" @click="showCatalogo = true" style="margin-bottom: 1.25rem;">
-          <Search :size="18" />
-          <span>Buscar y agregar mercado</span>
-        </button>
-
-        <!-- Lista de mercados -->
-        <div v-if="loadingMercados" class="loading-state">
-          <div class="spinner"></div>
-          <p>Cargando mercados...</p>
+        <!-- Tabs -->
+        <div class="mercados-tabs">
+          <button class="mercados-tab" :class="{ 'mercados-tab--active': activeTab === 'principal' }" @click="activeTab = 'principal'">
+            <Store :size="16" /> Principal
+          </button>
+          <button class="mercados-tab" :class="{ 'mercados-tab--active': activeTab === 'favoritos' }" @click="activeTab = 'favoritos'">
+            <Star :size="16" /> Favoritos
+          </button>
+          <button class="mercados-tab" :class="{ 'mercados-tab--active': activeTab === 'propuestos' }" @click="activeTab = 'propuestos'">
+            <MapPin :size="16" /> Propuestos
+          </button>
         </div>
 
-        <div v-else-if="mercados.length === 0" class="empty-state">
-          <Store :size="48" />
-          <p>No tienes mercados registrados</p>
-          <p class="empty-state__hint">Busca un mercado del catálogo para comenzar a capturar precios</p>
-        </div>
+        <!-- ══ TAB: PRINCIPAL ══ -->
+        <div v-if="activeTab === 'principal'">
+          <!-- Últimos 3 mercados usados -->
+          <div v-if="mercadosRecientes.length > 0" class="recientes-section">
+            <h3 class="recientes-title"><Clock :size="16" /> Usados recientemente</h3>
+            <div class="recientes-list">
+              <div v-for="m in mercadosRecientes.slice(0, 3)" :key="'rec-' + m.id" class="reciente-chip" @click="selectMercado(m)">
+                <Store :size="14" />
+                <span class="reciente-chip__name">{{ m.nombre }}</span>
+                <ChevronRight :size="14" />
+              </div>
+            </div>
+          </div>
 
-        <div v-else class="mercados-list">
+          <!-- Botón agregar mercado -->
+          <button class="btn btn--primary btn--full" @click="showCatalogo = true" style="margin-bottom: 1.25rem;">
+            <Search :size="18" />
+            <span>Buscar y agregar mercado</span>
+          </button>
+
+          <!-- Lista de mercados -->
+          <div v-if="loadingMercados" class="loading-state">
+            <div class="spinner"></div>
+            <p>Cargando mercados...</p>
+          </div>
+
+          <div v-else-if="mercados.length === 0" class="empty-state">
+            <Store :size="48" />
+            <p>No tienes mercados registrados</p>
+            <p class="empty-state__hint">Busca un mercado del catálogo para comenzar a capturar precios</p>
+          </div>
+
+          <div v-else class="mercados-list">
           <div
             v-for="m in mercados"
             :key="m.id"
@@ -51,6 +78,64 @@
                 <Trash2 :size="18" />
               </button>
               <ChevronRight :size="20" class="mercado-card__arrow" />
+            </div>
+          </div>
+        </div>
+        </div><!-- fin tab principal -->
+
+        <!-- ══ TAB: FAVORITOS ══ -->
+        <div v-if="activeTab === 'favoritos'">
+          <p class="tab-description">Mercados donde ya has capturado precios</p>
+          <div v-if="mercadosRecientes.length === 0" class="empty-state">
+            <Star :size="48" />
+            <p>Sin mercados usados aún</p>
+            <p class="empty-state__hint">Captura precios en un mercado y aparecerá aquí</p>
+          </div>
+          <div v-else class="mercados-list">
+            <div
+              v-for="m in mercadosFavoritos"
+              :key="'fav-' + m.id"
+              class="mercado-card"
+              @click="selectMercado(m)"
+            >
+              <div class="mercado-card__info">
+                <h3>{{ m.nombre }}</h3>
+                <div class="mercado-card__meta">
+                  <span class="mercado-card__badge" :class="tipoBadgeClass(m.tipo)">{{ formatTipo(m.tipo) }}</span>
+                  <span class="mercado-card__loc">
+                    <MapPin :size="12" />
+                    {{ m.municipio }}, {{ m.entidad }}
+                  </span>
+                </div>
+              </div>
+              <ChevronRight :size="20" class="mercado-card__arrow" />
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ TAB: PROPUESTOS ══ -->
+        <div v-if="activeTab === 'propuestos'">
+          <div class="propuestos-tab-header">
+            <p class="tab-description">Mercados que has propuesto</p>
+            <button class="btn btn--outline btn--sm" @click="showProponer = true">
+              <Plus :size="16" /> Proponer nuevo
+            </button>
+          </div>
+          <div v-if="propuestos.length === 0" class="empty-state">
+            <MapPin :size="48" />
+            <p>No has propuesto mercados</p>
+            <p class="empty-state__hint">Si no encuentras un mercado en el catálogo, puedes proponer uno nuevo</p>
+          </div>
+          <div v-else class="propuestos-list">
+            <div v-for="p in propuestos" :key="p.id" class="propuesto-card">
+              <div class="propuesto-card__info">
+                <h4>{{ p.nombre_mercado }}</h4>
+                <div class="propuesto-card__meta">
+                  <span class="propuesto-card__badge" :class="propStatusClass(p.status)">{{ propStatusLabel(p.status) }}</span>
+                  <span class="propuesto-card__loc">{{ p.municipio }}, {{ p.estado }}</span>
+                </div>
+                <span v-if="p.tipo_mercado" class="propuesto-card__tipo">{{ formatTipo(p.tipo_mercado) }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -293,25 +378,6 @@
         </div>
       </div>
 
-      <!-- ═══ SECCIÓN: MIS PROPUESTAS ═══ -->
-      <div v-if="!selectedMercado && propuestos.length > 0 && !showCatalogo && !showProponer" class="propuestos-section">
-        <h3 class="propuestos-title">
-          <MapPin :size="18" />
-          Mis mercados propuestos ({{ propuestos.length }})
-        </h3>
-        <div class="propuestos-list">
-          <div v-for="p in propuestos" :key="p.id" class="propuesto-card">
-            <div class="propuesto-card__info">
-              <h4>{{ p.nombre_mercado }}</h4>
-              <div class="propuesto-card__meta">
-                <span class="propuesto-card__badge" :class="propStatusClass(p.status)">{{ propStatusLabel(p.status) }}</span>
-                <span class="propuesto-card__loc">{{ p.municipio }}, {{ p.estado }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- ═══ CAPTURA DE PRECIOS ═══ -->
       <div v-if="selectedMercado" class="captura-section">
         <!-- Header -->
@@ -475,7 +541,7 @@ import AppSidebar from '@/components/AppSidebar.vue'
 import AppToast from '@/components/AppToast.vue'
 import {
   Store, Search, Trash2, ChevronRight, ArrowLeft, MapPin, X, Plus, CheckCircle,
-  Wheat, Beef, Save, FileText, Navigation, AlertCircle
+  Wheat, Beef, Save, FileText, Navigation, AlertCircle, Star, Clock
 } from 'lucide-vue-next'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -521,6 +587,8 @@ const ESTADO_COORDS: Record<string, [number, number]> = {
 const mercados = ref<Mercado[]>([])
 const selectedMercado = ref<Mercado | null>(null)
 const loadingMercados = ref(false)
+const activeTab = ref<'principal' | 'favoritos' | 'propuestos'>('principal')
+const mercadosRecientes = ref<Mercado[]>([])
 
 // ── State: Catálogo búsqueda ──
 const showCatalogo = ref(false)
@@ -819,6 +887,14 @@ async function loadMercados() {
   }
 }
 
+async function loadRecientes() {
+  try {
+    mercadosRecientes.value = await mercadosService.getMercadosRecientes()
+  } catch { /* silent */ }
+}
+
+const mercadosFavoritos = computed(() => mercadosRecientes.value)
+
 async function deleteMercado(id: number) {
   if (!confirm('¿Eliminar este mercado? Se eliminarán también sus precios.')) return
   try {
@@ -990,6 +1066,7 @@ async function savePrecio() {
     })
     historial.value.unshift(saved)
     ui.showToast(`${saved.producto_nombre} — $${saved.precio.toFixed(2)} guardado`, 'success')
+    loadRecientes()
 
     precioValue.value = null
     unidadValue.value = unidades.value.length === 1 ? unidades.value[0].nombre : ''
@@ -1006,6 +1083,7 @@ onMounted(() => {
   loadMercados()
   loadEntidades()
   loadPropuestos()
+  loadRecientes()
 })
 
 onBeforeUnmount(() => {
@@ -1033,6 +1111,104 @@ onBeforeUnmount(() => {
   font-size: 1.35rem;
   font-weight: 700;
   margin: 0;
+}
+
+/* ── Tabs ── */
+.mercados-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+  background: #f5f5f5;
+  border-radius: 12px;
+  padding: 0.25rem;
+}
+.mercados-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.6rem 0.5rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.mercados-tab--active {
+  background: #fff;
+  color: #1B5E20;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* ── Recientes ── */
+.recientes-section {
+  margin-bottom: 1rem;
+}
+.recientes-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #777;
+  margin: 0 0 0.5rem;
+}
+.recientes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+.reciente-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  background: #e8f5e9;
+  border: 1.5px solid #c8e6c9;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: #1B5E20;
+}
+.reciente-chip:active {
+  transform: scale(0.98);
+  background: #c8e6c9;
+}
+.reciente-chip__name {
+  flex: 1;
+  font-size: 0.88rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Tab description ── */
+.tab-description {
+  font-size: 0.82rem;
+  color: #999;
+  margin: 0 0 1rem;
+  text-align: center;
+}
+.propuestos-tab-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.propuestos-tab-header .tab-description {
+  margin: 0;
+  text-align: left;
+}
+.propuesto-card__tipo {
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 0.15rem;
 }
 
 .input {
@@ -1611,15 +1787,246 @@ onBeforeUnmount(() => {
 
 /* ── Responsive ── */
 @media (max-width: 480px) {
-  .precio-form__fields {
-    flex-direction: column;
+  .mercados-section,
+  .captura-section {
+    padding: 0.75rem 0.75rem 1.5rem;
   }
+  .section-header h1 {
+    font-size: 1.15rem;
+  }
+
+  /* Tabs */
+  .mercados-tabs {
+    margin-bottom: 1rem;
+  }
+  .mercados-tab {
+    font-size: 0.72rem;
+    padding: 0.5rem 0.3rem;
+    gap: 0.2rem;
+  }
+  .mercados-tab svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Recientes */
+  .reciente-chip {
+    padding: 0.5rem 0.6rem;
+  }
+  .reciente-chip__name {
+    font-size: 0.8rem;
+  }
+
+  /* Mercado cards */
+  .mercado-card {
+    padding: 0.65rem 0.75rem;
+    border-radius: 10px;
+  }
+  .mercado-card__info h3 {
+    font-size: 0.85rem;
+  }
+  .mercado-card__loc {
+    font-size: 0.7rem;
+  }
+  .mercado-card__badge {
+    font-size: 0.6rem;
+    padding: 0.1rem 0.35rem;
+  }
+  .btn-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  /* Captura header */
+  .captura-header__title h2 {
+    font-size: 1.05rem;
+  }
+  .captura-header__loc {
+    font-size: 0.75rem;
+  }
+
+  /* Toggle precio */
   .tipo-precio-toggle {
     flex-direction: column;
     align-items: flex-start;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
   }
+  .toggle-label {
+    font-size: 0.82rem;
+  }
+  .toggle-pill {
+    padding: 0.4rem 0.9rem;
+    font-size: 0.82rem;
+  }
+
+  /* Categoría tabs */
+  .cat-tab {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.8rem;
+    gap: 0.2rem;
+  }
+
+  /* Inputs and selects */
+  .input {
+    font-size: 0.85rem;
+    padding: 0.55rem 0.65rem;
+  }
+  .filter-label {
+    font-size: 0.78rem;
+  }
+
+  /* Precio form */
+  .precio-form {
+    padding: 0.75rem;
+    border-radius: 12px;
+  }
+  .precio-form__name {
+    font-size: 0.92rem;
+  }
+  .precio-form__fields {
+    flex-direction: column;
+  }
+  .precio-form__field label {
+    font-size: 0.7rem;
+  }
+
+  /* Buttons */
+  .btn {
+    font-size: 0.82rem;
+    padding: 0.55rem 0.85rem;
+  }
+  .btn--lg {
+    padding: 0.7rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  /* Historial */
+  .historial-title {
+    font-size: 0.9rem;
+  }
+  .historial-row {
+    padding: 0.5rem 0.65rem;
+    gap: 0.35rem;
+  }
+  .historial-row__name {
+    font-size: 0.8rem;
+  }
+  .historial-row__sub {
+    font-size: 0.68rem;
+  }
+  .historial-row__price {
+    font-size: 0.82rem;
+  }
+  .historial-row__unit {
+    font-size: 0.7rem;
+    min-width: 45px;
+  }
+  .historial-row__badge {
+    font-size: 0.58rem;
+    padding: 0.1rem 0.3rem;
+  }
+  .historial-row__cat-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Modal catálogo */
   .modal-catalogo {
     max-height: 90vh;
+  }
+  .modal-header h2 {
+    font-size: 0.95rem;
+  }
+  .catalogo-filtros {
+    padding: 0.5rem 0.85rem;
+    gap: 0.4rem;
+  }
+  .catalogo-item {
+    padding: 0.6rem 0.85rem;
+  }
+  .catalogo-item__info h4 {
+    font-size: 0.82rem;
+  }
+  .catalogo-item__meta {
+    font-size: 0.72rem;
+  }
+
+  /* Proponer form */
+  .proponer-form {
+    padding: 0.75rem 0.85rem 1rem;
+  }
+  .proponer-section__title {
+    font-size: 0.85rem;
+  }
+  .form-label {
+    font-size: 0.75rem;
+  }
+
+  /* Propuestos */
+  .propuesto-card {
+    padding: 0.55rem 0.7rem;
+  }
+  .propuesto-card__info h4 {
+    font-size: 0.82rem;
+  }
+  .propuesto-card__loc {
+    font-size: 0.68rem;
+  }
+
+  /* Días */
+  .dia-check__label {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  /* Horario */
+  .horario-select .input {
+    font-size: 0.78rem;
+    padding: 0.5rem 0.4rem;
+  }
+  .horario-sep {
+    font-size: 0.78rem;
+  }
+
+  /* Map picker */
+  .map-picker__map {
+    height: 200px;
+  }
+}
+
+@media (max-width: 360px) {
+  .mercados-section,
+  .captura-section {
+    padding: 0.5rem 0.5rem 1rem;
+  }
+  .section-header h1 {
+    font-size: 1rem;
+  }
+  .mercados-tab {
+    font-size: 0.65rem;
+    padding: 0.4rem 0.2rem;
+  }
+  .mercado-card__info h3 {
+    font-size: 0.78rem;
+  }
+  .input {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.55rem;
+  }
+  .btn {
+    font-size: 0.78rem;
+    padding: 0.5rem 0.7rem;
+  }
+  .cat-tab {
+    font-size: 0.72rem;
+    padding: 0.4rem 0.4rem;
+  }
+  .reciente-chip__name {
+    font-size: 0.75rem;
+  }
+  .historial-row__right {
+    gap: 0.3rem;
   }
 }
 

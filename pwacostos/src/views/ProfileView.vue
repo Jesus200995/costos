@@ -744,4 +744,128 @@ onMounted(async () => {
   background: #f1f5f9;
   border-color: #e2e8f0 !important;
 }
+
+/* ── Responsive: pantallas pequeñas ── */
+@media (max-width: 480px) {
+  .profile-page {
+    padding: 0 0.5rem 1.5rem;
+  }
+  .profile-header {
+    padding: 0.6rem 0;
+    gap: 0.5rem;
+  }
+  .profile-header__title {
+    font-size: 1.05rem;
+  }
+  .profile-edit-btn,
+  .profile-cancel-btn {
+    font-size: 0.76rem;
+    padding: 5px 10px;
+    gap: 3px;
+  }
+  .profile-card {
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+  }
+  .profile-avatar {
+    width: 56px;
+    height: 56px;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+  }
+  .profile-name {
+    font-size: 1rem;
+  }
+  .profile-email {
+    font-size: 0.78rem;
+  }
+  .profile-role-badge {
+    font-size: 0.68rem;
+    padding: 2px 9px;
+  }
+  .profile-section {
+    padding: 0.85rem;
+    border-radius: 12px;
+    margin-bottom: 0.65rem;
+  }
+  .profile-section__title {
+    font-size: 0.8rem;
+    gap: 0.3rem;
+    margin-bottom: 0.65rem;
+    padding-bottom: 0.35rem;
+  }
+  .profile-field {
+    padding: 0.4rem 0;
+  }
+  .profile-field__label {
+    font-size: 0.74rem;
+  }
+  .profile-field__value {
+    font-size: 0.78rem;
+  }
+  .form-label {
+    font-size: 0.74rem;
+  }
+  .form-optional {
+    font-size: 0.68rem;
+  }
+  .form-auto-tag {
+    font-size: 0.62rem;
+  }
+  .profile-edit-form .profile-section {
+    gap: 0.6rem;
+  }
+  .btn--full {
+    font-size: 0.82rem;
+    padding: 10px;
+  }
+}
+
+@media (max-width: 360px) {
+  .profile-page {
+    padding: 0 0.35rem 1rem;
+  }
+  .profile-header__title {
+    font-size: 0.95rem;
+  }
+  .profile-edit-btn,
+  .profile-cancel-btn {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+  }
+  .profile-card {
+    padding: 0.75rem;
+  }
+  .profile-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 1rem;
+  }
+  .profile-name {
+    font-size: 0.9rem;
+  }
+  .profile-email {
+    font-size: 0.72rem;
+  }
+  .profile-section {
+    padding: 0.65rem;
+  }
+  .profile-section__title {
+    font-size: 0.74rem;
+  }
+  .profile-field__label {
+    font-size: 0.68rem;
+  }
+  .profile-field__value {
+    font-size: 0.72rem;
+  }
+  .form-label {
+    font-size: 0.68rem;
+  }
+  .btn--full {
+    font-size: 0.76rem;
+    padding: 8px;
+  }
+}
 </style>

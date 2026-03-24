@@ -186,6 +186,23 @@ export interface PrecioHistorialItem {
   created_at: string
 }
 
+export interface HistorialGeneralItem {
+  id: number
+  mercado_id: number
+  mercado_nombre: string
+  mercado_entidad: string
+  mercado_municipio: string
+  producto_id: number
+  producto_nombre: string
+  subcategoria_nombre: string
+  categoria_id: string
+  precio: number
+  unidad: string
+  tipo_precio: string
+  fecha: string
+  created_at: string
+}
+
 // ── Mercados propuestos ──
 
 export interface MercadoPropuestoCreate {
