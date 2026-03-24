@@ -1241,6 +1241,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  padding-top: env(safe-area-inset-top, 0px);
 }
 .modal-catalogo {
   background: #fff;
@@ -1771,15 +1772,8 @@ onBeforeUnmount(() => {
 }
 
 /* ── Modal Proponer responsive ── */
-@media (max-width: 480px) {
-  .modal-proponer {
-    max-height: 95vh;
-    margin: 0.5rem;
-    border-radius: 14px;
-  }
-  .proponer-form {
-    padding: 0.75rem 1rem 1.25rem;
-  }
+.modal-proponer {
+  max-height: calc(90vh - env(safe-area-inset-top, 0px));
 }
 
 /* ── Días checkboxes ── */
