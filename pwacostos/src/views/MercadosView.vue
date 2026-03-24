@@ -487,8 +487,10 @@ const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 const HORAS = (() => {
   const arr: string[] = []
   for (let h = 0; h < 24; h++) {
+    const suffix = h < 12 ? 'AM' : 'PM'
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h
     for (const m of ['00', '30']) {
-      arr.push(`${h.toString().padStart(2, '0')}:${m}`)
+      arr.push(`${h12}:${m} ${suffix}`)
     }
   }
   return arr
