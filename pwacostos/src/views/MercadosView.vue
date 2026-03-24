@@ -97,7 +97,7 @@
 
           <div v-else-if="catalogoResults.length === 0 && hasSearched" class="empty-state" style="padding: 2rem;">
             <p>No se encontraron mercados</p>
-            <button class="btn btn--outline" style="margin-top: 0.75rem;" @click="showCatalogo = false; showProponer = true">
+            <button class="btn btn--outline btn--wrap" style="margin-top: 0.75rem;" @click="showCatalogo = false; showProponer = true">
               <Plus :size="16" />
               <span>Proponer mercado nuevo</span>
             </button>
@@ -132,9 +132,9 @@
 
           <!-- Botón proponer al fondo del modal -->
           <div class="catalogo-footer">
-            <button class="btn btn--outline btn--full" @click="showCatalogo = false; showProponer = true">
+            <button class="btn btn--outline btn--full btn--wrap" @click="showCatalogo = false; showProponer = true">
               <MapPin :size="16" />
-              <span>¿No encuentras tu mercado? Proponer uno nuevo</span>
+              <span>¿No encuentras tu mercado?<br>Proponer uno nuevo</span>
             </button>
           </div>
         </div>
@@ -214,10 +214,26 @@
                 <span>{{ gpsError }}</span>
               </div>
 
-              <button class="btn btn--outline btn--full" @click="captureGPS" :disabled="gpsStatus === 'loading'" style="margin-top: 0.5rem;">
-                <Navigation :size="16" />
-                <span>{{ gpsStatus === 'success' ? 'Recapturar ubicación' : 'Capturar ubicación' }}</span>
-              </button>
+              <div class="gps-buttons">
+                <button class="btn btn--outline btn--full btn--wrap" @click="captureGPS" :disabled="gpsStatus === 'loading'">
+                  <Navigation :size="16" />
+                  <span>{{ gpsStatus === 'success' ? 'Recapturar GPS' : 'Capturar mi ubicación' }}</span>
+                </button>
+                <button class="btn btn--outline btn--full btn--wrap" @click="toggleMapMode">
+                  <MapPin :size="16" />
+                  <span>{{ showMapPicker ? 'Ocultar mapa' : 'Colocar en mapa' }}</span>
+                </button>
+              </div>
+
+              <!-- Mini mapa para ubicación manual -->
+              <div v-if="showMapPicker" class="map-picker">
+                <div ref="mapContainer" class="map-picker__map"></div>
+                <p class="map-picker__hint">Toca el mapa o arrastra el marcador para ubicar el mercado</p>
+                <button class="btn btn--primary btn--full" @click="confirmMapLocation" :disabled="propForm.latitud === 0">
+                  <CheckCircle :size="16" />
+                  <span>Confirmar ubicación</span>
+                </button>
+              </div>
             </div>
 
             <!-- C. Operación -->
@@ -236,17 +252,27 @@
 
               <div class="form-group">
                 <label class="form-label">Horario</label>
-                <input v-model="propForm.horario" type="text" class="input" placeholder="Ej: 08:00 - 14:00" />
+                <div class="horario-row">
+                  <select v-model="horarioDesde" class="input horario-select">
+                    <option value="">Desde...</option>
+                    <option v-for="h in HORAS" :key="'d'+h" :value="h">{{ h }}</option>
+                  </select>
+                  <span class="horario-sep">a</span>
+                  <select v-model="horarioHasta" class="input horario-select">
+                    <option value="">Hasta...</option>
+                    <option v-for="h in HORAS" :key="'h'+h" :value="h">{{ h }}</option>
+                  </select>
+                </div>
               </div>
 
               <div class="form-group">
                 <label class="form-label">Referencia</label>
-                <input v-model="propForm.referencia" type="text" class="input" placeholder="Ej: Frente a la iglesia..." />
+                <input v-model="propForm.referencia" type="text" class="input" placeholder="EJ: FRENTE A LA IGLESIA..." @input="propForm.referencia = toUpperNoTildes(propForm.referencia)" />
               </div>
 
               <div class="form-group">
                 <label class="form-label">Observaciones</label>
-                <textarea v-model="propForm.observaciones" class="input input--textarea" rows="3" placeholder="Información adicional..."></textarea>
+                <textarea v-model="propForm.observaciones" class="input input--textarea" rows="3" placeholder="INFORMACION ADICIONAL..." @input="propForm.observaciones = toUpperNoTildes(propForm.observaciones)"></textarea>
               </div>
             </div>
 
@@ -440,7 +466,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, reactive, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { mercadosService } from '@/services/mercados.service'
 import type { Mercado, CatalogoMercado, Categoria, Subcategoria, Producto, Unidad, PrecioHistorialItem, MercadoPropuesto } from '@/types'
@@ -451,10 +477,43 @@ import {
   Store, Search, Trash2, ChevronRight, ArrowLeft, MapPin, X, Plus, CheckCircle,
   Wheat, Beef, Save, FileText, Navigation, AlertCircle
 } from 'lucide-vue-next'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 
 const ui = useUiStore()
 
 const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+
+const HORAS = (() => {
+  const arr: string[] = []
+  for (let h = 0; h < 24; h++) {
+    for (const m of ['00', '30']) {
+      arr.push(`${h.toString().padStart(2, '0')}:${m}`)
+    }
+  }
+  return arr
+})()
+
+const ESTADO_COORDS: Record<string, [number, number]> = {
+  'AGUASCALIENTES': [21.88, -102.30], 'BAJA CALIFORNIA': [30.84, -115.97],
+  'BAJA CALIFORNIA SUR': [24.82, -111.80], 'CAMPECHE': [19.83, -90.52],
+  'CHIAPAS': [16.75, -93.12], 'CHIHUAHUA': [28.64, -106.09],
+  'CIUDAD DE MEXICO': [19.43, -99.13], 'COAHUILA': [26.34, -102.07],
+  'COAHUILA DE ZARAGOZA': [26.34, -102.07], 'COLIMA': [19.24, -103.73],
+  'DURANGO': [24.02, -104.66], 'GUANAJUATO': [21.01, -101.26],
+  'GUERRERO': [17.55, -99.51], 'HIDALGO': [20.10, -98.73],
+  'JALISCO': [20.66, -103.35], 'MEXICO': [19.36, -99.59],
+  'ESTADO DE MEXICO': [19.36, -99.59], 'MICHOACAN': [19.70, -101.18],
+  'MICHOACAN DE OCAMPO': [19.70, -101.18], 'MORELOS': [18.92, -99.23],
+  'NAYARIT': [21.50, -104.89], 'NUEVO LEON': [25.67, -100.31],
+  'OAXACA': [17.06, -96.73], 'PUEBLA': [19.04, -98.20],
+  'QUERETARO': [20.59, -100.39], 'QUINTANA ROO': [20.50, -87.46],
+  'SAN LUIS POTOSI': [22.15, -100.98], 'SINALOA': [24.79, -107.39],
+  'SONORA': [29.09, -110.96], 'TABASCO': [17.99, -92.92],
+  'TAMAULIPAS': [23.74, -99.14], 'TLAXCALA': [19.32, -98.24],
+  'VERACRUZ': [19.17, -96.13], 'VERACRUZ DE IGNACIO DE LA LLAVE': [19.17, -96.13],
+  'YUCATAN': [20.97, -89.62], 'ZACATECAS': [22.77, -102.57],
+}
 
 // ── State: Mercados ──
 const mercados = ref<Mercado[]>([])
@@ -481,6 +540,12 @@ const gpsStatus = ref<'idle' | 'loading' | 'success' | 'error'>('idle')
 const gpsError = ref('')
 const submittingProp = ref(false)
 const propuestos = ref<MercadoPropuesto[]>([])
+const showMapPicker = ref(false)
+const mapContainer = ref<HTMLElement | null>(null)
+const horarioDesde = ref('')
+const horarioHasta = ref('')
+let leafletMap: L.Map | null = null
+let leafletMarker: L.Marker | null = null
 const propForm = reactive({
   nombre_mercado: '',
   tipo_mercado: '',
@@ -595,6 +660,83 @@ function captureGPS() {
   )
 }
 
+function toUpperNoTildes(str: string): string {
+  return str.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
+function destroyMap() {
+  if (leafletMap) {
+    leafletMap.remove()
+    leafletMap = null
+    leafletMarker = null
+  }
+}
+
+function initPropMap() {
+  if (!mapContainer.value) return
+  destroyMap()
+
+  let center: L.LatLngExpression = [23.63, -102.55]
+  let zoom = 5
+
+  if (propForm.estado) {
+    const key = propForm.estado.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    const coords = ESTADO_COORDS[key]
+    if (coords) { center = coords; zoom = 9 }
+  }
+
+  if (propForm.latitud !== 0 && propForm.longitud !== 0) {
+    center = [propForm.latitud, propForm.longitud]
+    zoom = 15
+  }
+
+  leafletMap = L.map(mapContainer.value, { center, zoom, zoomControl: true, attributionControl: false })
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+  }).addTo(leafletMap)
+
+  const markerIcon = L.divIcon({
+    className: 'prop-map-marker',
+    html: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42"><path d="M16 0C7.16 0 0 7.16 0 16c0 12 16 26 16 26s16-14 16-26C32 7.16 24.84 0 16 0z" fill="#1B5E20"/><circle cx="16" cy="16" r="7" fill="#fff"/></svg>',
+    iconSize: [32, 42],
+    iconAnchor: [16, 42],
+  })
+
+  leafletMarker = L.marker(center, { draggable: true, icon: markerIcon }).addTo(leafletMap)
+
+  leafletMarker.on('dragend', () => {
+    const pos = leafletMarker!.getLatLng()
+    propForm.latitud = pos.lat
+    propForm.longitud = pos.lng
+    gpsStatus.value = 'success'
+  })
+
+  leafletMap.on('click', (e: L.LeafletMouseEvent) => {
+    leafletMarker!.setLatLng(e.latlng)
+    propForm.latitud = e.latlng.lat
+    propForm.longitud = e.latlng.lng
+    gpsStatus.value = 'success'
+  })
+}
+
+function toggleMapMode() {
+  showMapPicker.value = !showMapPicker.value
+  if (showMapPicker.value) {
+    nextTick(() => initPropMap())
+  } else {
+    destroyMap()
+  }
+}
+
+function confirmMapLocation() {
+  if (propForm.latitud !== 0 && propForm.longitud !== 0) {
+    gpsStatus.value = 'success'
+  }
+  showMapPicker.value = false
+  destroyMap()
+}
+
 function resetPropForm() {
   propForm.nombre_mercado = ''
   propForm.tipo_mercado = ''
@@ -611,6 +753,10 @@ function resetPropForm() {
   gpsStatus.value = 'idle'
   gpsError.value = ''
   propMunicipios.value = []
+  horarioDesde.value = ''
+  horarioHasta.value = ''
+  showMapPicker.value = false
+  destroyMap()
 }
 
 async function submitPropuesta() {
@@ -627,7 +773,7 @@ async function submitPropuesta() {
       latitud: propForm.latitud,
       longitud: propForm.longitud,
       dias_operacion: propForm.dias_operacion,
-      horario: propForm.horario || undefined,
+      horario: horarioDesde.value && horarioHasta.value ? `${horarioDesde.value} - ${horarioHasta.value}` : undefined,
       referencia: propForm.referencia || undefined,
       observaciones: propForm.observaciones || undefined,
     })
@@ -858,6 +1004,10 @@ onMounted(() => {
   loadMercados()
   loadEntidades()
   loadPropuestos()
+})
+
+onBeforeUnmount(() => {
+  destroyMap()
 })
 </script>
 
@@ -1561,6 +1711,75 @@ onMounted(() => {
   width: 18px;
   height: 18px;
   border-width: 2px;
+}
+
+/* ── GPS buttons & Map picker ── */
+.gps-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+.map-picker {
+  margin-top: 0.75rem;
+  border: 1.5px solid #c8e6c9;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.map-picker__map {
+  width: 100%;
+  height: 250px;
+}
+.map-picker__hint {
+  font-size: 0.78rem;
+  color: #777;
+  font-style: italic;
+  text-align: center;
+  margin: 0.5rem 0.5rem 0;
+}
+.map-picker .btn {
+  margin: 0.5rem;
+  width: calc(100% - 1rem);
+}
+.prop-map-marker {
+  background: none !important;
+  border: none !important;
+}
+
+/* ── Horario row ── */
+.horario-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.horario-select {
+  flex: 1;
+  min-width: 0;
+}
+.horario-sep {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #777;
+  padding: 0 0.15rem;
+}
+
+/* ── Responsive button wrap ── */
+.btn--wrap {
+  white-space: normal;
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* ── Modal Proponer responsive ── */
+@media (max-width: 480px) {
+  .modal-proponer {
+    max-height: 95vh;
+    margin: 0.5rem;
+    border-radius: 14px;
+  }
+  .proponer-form {
+    padding: 0.75rem 1rem 1.25rem;
+  }
 }
 
 /* ── Días checkboxes ── */
