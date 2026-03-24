@@ -97,6 +97,10 @@
 
           <div v-else-if="catalogoResults.length === 0 && hasSearched" class="empty-state" style="padding: 2rem;">
             <p>No se encontraron mercados</p>
+            <button class="btn btn--outline" style="margin-top: 0.75rem;" @click="showCatalogo = false; showProponer = true">
+              <Plus :size="16" />
+              <span>Proponer mercado nuevo</span>
+            </button>
           </div>
 
           <div v-else class="catalogo-results">
@@ -122,6 +126,160 @@
                 <button v-else class="btn btn--primary btn--sm" :disabled="addingId === cm.id">
                   <Plus :size="16" />
                 </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botón proponer al fondo del modal -->
+          <div class="catalogo-footer">
+            <button class="btn btn--outline btn--full" @click="showCatalogo = false; showProponer = true">
+              <MapPin :size="16" />
+              <span>¿No encuentras tu mercado? Proponer uno nuevo</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ MODAL PROPONER MERCADO ═══ -->
+      <div v-if="showProponer" class="modal-overlay" @click.self="showProponer = false">
+        <div class="modal-catalogo modal-proponer">
+          <div class="modal-header">
+            <h2><MapPin :size="20" /> Proponer Mercado</h2>
+            <button class="btn-icon" @click="showProponer = false"><X :size="22" /></button>
+          </div>
+
+          <div class="proponer-form">
+            <!-- A. Identificación -->
+            <div class="proponer-section">
+              <h3 class="proponer-section__title">Identificación</h3>
+
+              <div class="form-group">
+                <label class="form-label">Nombre del mercado *</label>
+                <input v-model="propForm.nombre_mercado" type="text" class="input" placeholder="Ej: Mercado Municipal Centro" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Tipo de mercado *</label>
+                <select v-model="propForm.tipo_mercado" class="input">
+                  <option value="">Seleccionar...</option>
+                  <option value="MERCADO_PUBLICO">Mercado público</option>
+                  <option value="TIANGUIS">Tianguis</option>
+                  <option value="CENTRAL_ABASTO">Central de abasto</option>
+                  <option value="OTRO">Otro</option>
+                </select>
+              </div>
+
+              <div v-if="propForm.tipo_mercado === 'OTRO'" class="form-group">
+                <label class="form-label">Especificar tipo</label>
+                <input v-model="propForm.tipo_mercado_otro" type="text" class="input" placeholder="Tipo de mercado..." />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Estado *</label>
+                <select v-model="propForm.estado" class="input" @change="onPropEntidadChange">
+                  <option value="">Seleccionar estado...</option>
+                  <option v-for="e in entidades" :key="e" :value="e">{{ e }}</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Municipio *</label>
+                <select v-model="propForm.municipio" class="input" :disabled="!propForm.estado">
+                  <option value="">Seleccionar municipio...</option>
+                  <option v-for="m in propMunicipios" :key="m" :value="m">{{ m }}</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Localidad / Colonia</label>
+                <input v-model="propForm.localidad_colonia" type="text" class="input" placeholder="Ej: Centro, Col. Reforma..." />
+              </div>
+            </div>
+
+            <!-- B. Ubicación GPS -->
+            <div class="proponer-section">
+              <h3 class="proponer-section__title">Ubicación GPS</h3>
+
+              <div v-if="gpsStatus === 'success'" class="gps-status gps-status--ok">
+                <CheckCircle :size="16" />
+                <span>Ubicación capturada</span>
+                <span class="gps-coords">{{ propForm.latitud.toFixed(6) }}, {{ propForm.longitud.toFixed(6) }}</span>
+              </div>
+              <div v-else-if="gpsStatus === 'loading'" class="gps-status gps-status--loading">
+                <div class="spinner spinner--sm"></div>
+                <span>Obteniendo ubicación...</span>
+              </div>
+              <div v-else-if="gpsStatus === 'error'" class="gps-status gps-status--error">
+                <AlertCircle :size="16" />
+                <span>{{ gpsError }}</span>
+              </div>
+
+              <button class="btn btn--outline btn--full" @click="captureGPS" :disabled="gpsStatus === 'loading'" style="margin-top: 0.5rem;">
+                <Navigation :size="16" />
+                <span>{{ gpsStatus === 'success' ? 'Recapturar ubicación' : 'Capturar ubicación' }}</span>
+              </button>
+            </div>
+
+            <!-- C. Operación -->
+            <div class="proponer-section">
+              <h3 class="proponer-section__title">Operación</h3>
+
+              <div class="form-group">
+                <label class="form-label">Días de operación *</label>
+                <div class="dias-grid">
+                  <label v-for="dia in DIAS_SEMANA" :key="dia" class="dia-check">
+                    <input type="checkbox" :value="dia" v-model="propForm.dias_operacion" />
+                    <span class="dia-check__label">{{ dia }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Horario</label>
+                <input v-model="propForm.horario" type="text" class="input" placeholder="Ej: 08:00 - 14:00" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Referencia</label>
+                <input v-model="propForm.referencia" type="text" class="input" placeholder="Ej: Frente a la iglesia..." />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Observaciones</label>
+                <textarea v-model="propForm.observaciones" class="input input--textarea" rows="3" placeholder="Información adicional..."></textarea>
+              </div>
+            </div>
+
+            <!-- Guardar -->
+            <button
+              class="btn btn--primary btn--full btn--lg"
+              :disabled="!canSubmitPropuesta || submittingProp"
+              @click="submitPropuesta"
+            >
+              <Save :size="18" />
+              <span>{{ submittingProp ? 'Enviando...' : 'Enviar propuesta' }}</span>
+            </button>
+
+            <p class="proponer-note">
+              Tu propuesta será revisada por el equipo. Una vez autorizada, aparecerá en el catálogo de mercados.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ SECCIÓN: MIS PROPUESTAS ═══ -->
+      <div v-if="!selectedMercado && propuestos.length > 0 && !showCatalogo && !showProponer" class="propuestos-section">
+        <h3 class="propuestos-title">
+          <MapPin :size="18" />
+          Mis mercados propuestos ({{ propuestos.length }})
+        </h3>
+        <div class="propuestos-list">
+          <div v-for="p in propuestos" :key="p.id" class="propuesto-card">
+            <div class="propuesto-card__info">
+              <h4>{{ p.nombre_mercado }}</h4>
+              <div class="propuesto-card__meta">
+                <span class="propuesto-card__badge" :class="propStatusClass(p.status)">{{ propStatusLabel(p.status) }}</span>
+                <span class="propuesto-card__loc">{{ p.municipio }}, {{ p.estado }}</span>
               </div>
             </div>
           </div>
@@ -282,19 +440,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, reactive, onMounted, watch, nextTick } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { mercadosService } from '@/services/mercados.service'
-import type { Mercado, CatalogoMercado, Categoria, Subcategoria, Producto, Unidad, PrecioHistorialItem } from '@/types'
+import type { Mercado, CatalogoMercado, Categoria, Subcategoria, Producto, Unidad, PrecioHistorialItem, MercadoPropuesto } from '@/types'
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppToast from '@/components/AppToast.vue'
 import {
   Store, Search, Trash2, ChevronRight, ArrowLeft, MapPin, X, Plus, CheckCircle,
-  Wheat, Beef, Save, FileText
+  Wheat, Beef, Save, FileText, Navigation, AlertCircle
 } from 'lucide-vue-next'
 
 const ui = useUiStore()
+
+const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
 // ── State: Mercados ──
 const mercados = ref<Mercado[]>([])
@@ -313,6 +473,28 @@ const searchingCatalogo = ref(false)
 const hasSearched = ref(false)
 const addingId = ref<number | null>(null)
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
+
+// ── State: Proponer mercado ──
+const showProponer = ref(false)
+const propMunicipios = ref<string[]>([])
+const gpsStatus = ref<'idle' | 'loading' | 'success' | 'error'>('idle')
+const gpsError = ref('')
+const submittingProp = ref(false)
+const propuestos = ref<MercadoPropuesto[]>([])
+const propForm = reactive({
+  nombre_mercado: '',
+  tipo_mercado: '',
+  tipo_mercado_otro: '',
+  estado: '',
+  municipio: '',
+  localidad_colonia: '',
+  latitud: 0,
+  longitud: 0,
+  dias_operacion: [] as string[],
+  horario: '',
+  referencia: '',
+  observaciones: '',
+})
 
 // ── State: Catálogos productos ──
 const categorias = ref<Categoria[]>([])
@@ -352,9 +534,119 @@ function closeSidebar() {
 }
 
 function isMercadoAdded(_catalogoId: number): boolean {
-  // Check if we already have a market from this catalog entry
-  // We need to track catalogo IDs — for now check by matching returned mercados
   return false
+}
+
+// ── Proponer mercado ──
+function propStatusLabel(status: string): string {
+  if (status === 'pendiente_autorizacion') return 'Pendiente'
+  if (status === 'autorizado') return 'Autorizado'
+  if (status === 'rechazado') return 'Rechazado'
+  return status
+}
+
+function propStatusClass(status: string): string {
+  if (status === 'pendiente_autorizacion') return 'badge--orange'
+  if (status === 'autorizado') return 'badge--green'
+  if (status === 'rechazado') return 'badge--red'
+  return 'badge--teal'
+}
+
+const canSubmitPropuesta = computed(() =>
+  propForm.nombre_mercado.trim().length >= 4 &&
+  propForm.tipo_mercado !== '' &&
+  propForm.estado !== '' &&
+  propForm.municipio !== '' &&
+  propForm.dias_operacion.length > 0 &&
+  gpsStatus.value === 'success' &&
+  propForm.latitud !== 0 && propForm.longitud !== 0
+)
+
+async function onPropEntidadChange() {
+  propForm.municipio = ''
+  propMunicipios.value = []
+  if (propForm.estado) {
+    try {
+      propMunicipios.value = await mercadosService.getCatalogoMunicipios(propForm.estado)
+    } catch { /* silent */ }
+  }
+}
+
+function captureGPS() {
+  if (!navigator.geolocation) {
+    gpsStatus.value = 'error'
+    gpsError.value = 'Tu dispositivo no soporta geolocalización'
+    return
+  }
+  gpsStatus.value = 'loading'
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      propForm.latitud = pos.coords.latitude
+      propForm.longitud = pos.coords.longitude
+      gpsStatus.value = 'success'
+    },
+    (err) => {
+      gpsStatus.value = 'error'
+      if (err.code === 1) gpsError.value = 'Permiso de ubicación denegado'
+      else if (err.code === 2) gpsError.value = 'Ubicación no disponible'
+      else gpsError.value = 'No se pudo obtener la ubicación'
+    },
+    { enableHighAccuracy: true, timeout: 15000 }
+  )
+}
+
+function resetPropForm() {
+  propForm.nombre_mercado = ''
+  propForm.tipo_mercado = ''
+  propForm.tipo_mercado_otro = ''
+  propForm.estado = ''
+  propForm.municipio = ''
+  propForm.localidad_colonia = ''
+  propForm.latitud = 0
+  propForm.longitud = 0
+  propForm.dias_operacion = []
+  propForm.horario = ''
+  propForm.referencia = ''
+  propForm.observaciones = ''
+  gpsStatus.value = 'idle'
+  gpsError.value = ''
+  propMunicipios.value = []
+}
+
+async function submitPropuesta() {
+  if (!canSubmitPropuesta.value) return
+  submittingProp.value = true
+  try {
+    const created = await mercadosService.proponerMercado({
+      nombre_mercado: propForm.nombre_mercado.trim(),
+      tipo_mercado: propForm.tipo_mercado,
+      tipo_mercado_otro: propForm.tipo_mercado === 'OTRO' ? propForm.tipo_mercado_otro : undefined,
+      estado: propForm.estado,
+      municipio: propForm.municipio,
+      localidad_colonia: propForm.localidad_colonia || undefined,
+      latitud: propForm.latitud,
+      longitud: propForm.longitud,
+      dias_operacion: propForm.dias_operacion,
+      horario: propForm.horario || undefined,
+      referencia: propForm.referencia || undefined,
+      observaciones: propForm.observaciones || undefined,
+    })
+    propuestos.value.unshift(created)
+    ui.showToast('Propuesta enviada correctamente', 'success')
+    showProponer.value = false
+    resetPropForm()
+  } catch (e: any) {
+    const msg = e.response?.data?.detail || 'Error al enviar propuesta'
+    ui.showToast(msg, 'error')
+  } finally {
+    submittingProp.value = false
+  }
+}
+
+async function loadPropuestos() {
+  try {
+    propuestos.value = await mercadosService.getMercadosPropuestos()
+  } catch { /* silent */ }
 }
 
 // ── Computed ──
@@ -565,6 +857,7 @@ async function savePrecio() {
 onMounted(() => {
   loadMercados()
   loadEntidades()
+  loadPropuestos()
 })
 </script>
 
@@ -1175,5 +1468,192 @@ onMounted(() => {
   .modal-catalogo {
     max-height: 90vh;
   }
+}
+
+/* ── Botón outline ── */
+.btn--outline {
+  background: #fff;
+  color: #1B5E20;
+  border: 1.5px solid #1B5E20;
+}
+.btn--outline:hover:not(:disabled) {
+  background: #e8f5e9;
+}
+.btn--lg {
+  padding: 0.85rem 1.25rem;
+  font-size: 1rem;
+}
+
+/* ── Catálogo footer ── */
+.catalogo-footer {
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid #eee;
+}
+
+/* ── Modal Proponer ── */
+.modal-proponer {
+  max-height: 90vh;
+}
+.proponer-form {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.25rem 1.5rem;
+}
+.proponer-section {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+.proponer-section:last-of-type {
+  border-bottom: none;
+}
+.proponer-section__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1B5E20;
+  margin: 0 0 0.75rem;
+}
+.form-group {
+  margin-bottom: 0.75rem;
+}
+.form-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 0.25rem;
+}
+.input--textarea {
+  resize: vertical;
+  min-height: 60px;
+  font-family: inherit;
+}
+
+/* ── GPS status ── */
+.gps-status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.gps-status--ok {
+  background: #e8f5e9;
+  color: #1B5E20;
+}
+.gps-status--loading {
+  background: #fff3e0;
+  color: #e65100;
+}
+.gps-status--error {
+  background: #ffebee;
+  color: #c62828;
+}
+.gps-coords {
+  font-weight: 400;
+  font-size: 0.78rem;
+  margin-left: auto;
+  color: #666;
+}
+.spinner--sm {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+}
+
+/* ── Días checkboxes ── */
+.dias-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.dia-check {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.dia-check input {
+  display: none;
+}
+.dia-check__label {
+  padding: 0.4rem 0.65rem;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #666;
+  transition: all 0.15s;
+  user-select: none;
+}
+.dia-check input:checked + .dia-check__label {
+  background: #1B5E20;
+  color: #fff;
+  border-color: #1B5E20;
+}
+
+.proponer-note {
+  text-align: center;
+  font-size: 0.78rem;
+  color: #999;
+  margin-top: 0.75rem;
+  line-height: 1.4;
+}
+
+/* ── Propuestos section ── */
+.propuestos-section {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 1rem 2rem;
+}
+.propuestos-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #555;
+  margin: 0 0 0.5rem;
+}
+.propuestos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.propuesto-card {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1.5px solid #fff3e0;
+  border-radius: 10px;
+  padding: 0.7rem 0.85rem;
+}
+.propuesto-card__info h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+}
+.propuesto-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+  flex-wrap: wrap;
+}
+.propuesto-card__badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.12rem 0.4rem;
+  border-radius: 4px;
+}
+.propuesto-card__loc {
+  font-size: 0.75rem;
+  color: #888;
+}
+.badge--red {
+  background: #ffebee;
+  color: #c62828;
 }
 </style>

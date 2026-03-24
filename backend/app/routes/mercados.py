@@ -4,7 +4,8 @@ from app.schemas import (
     CategoriaOut, SubcategoriaOut, ProductoOut, UnidadOut,
     MercadoCreate, MercadoOut, CatalogoMercadoOut,
     ReporteCreate, ReporteOut, ReporteDetalleOut, DetalleItemOut,
-    PrecioIndividualCreate, PrecioHistorialItem
+    PrecioIndividualCreate, PrecioHistorialItem,
+    MercadoPropuestoCreate, MercadoPropuestoOut
 )
 from app.database import get_db
 from app.auth import get_current_user_id
@@ -428,6 +429,110 @@ def list_precios_historial(mercado_id: int = Query(...), user_id: str = Depends(
             unidad=r["unidad"],
             tipo_precio=r["tipo_precio"],
             fecha=r["fecha"].isoformat(),
+            created_at=r["created_at"].isoformat(),
+        )
+        for r in rows
+    ]
+
+
+# ── Mercados propuestos ──
+
+@router.post("/proponer", response_model=MercadoPropuestoOut, status_code=201)
+def proponer_mercado(data: MercadoPropuestoCreate, user_id: str = Depends(get_current_user_id)):
+    # Validaciones
+    if len(data.nombre_mercado.strip()) < 4:
+        raise HTTPException(400, "El nombre debe tener al menos 4 caracteres")
+    if data.tipo_mercado not in ("MERCADO_PUBLICO", "TIANGUIS", "CENTRAL_ABASTO", "OTRO"):
+        raise HTTPException(400, "Tipo de mercado inválido")
+    if not (-90 <= data.latitud <= 90) or not (-180 <= data.longitud <= 180):
+        raise HTTPException(400, "Coordenadas fuera de rango")
+    if data.latitud == 0 and data.longitud == 0:
+        raise HTTPException(400, "Coordenadas inválidas (0,0)")
+    if not data.dias_operacion or len(data.dias_operacion) == 0:
+        raise HTTPException(400, "Selecciona al menos un día de operación")
+
+    with get_db() as conn:
+        cur = conn.cursor()
+        # Obtener datos del perfil del usuario
+        cur.execute(
+            "SELECT tipo_capturista, cac_id, cac_nombre, territorio, ruta FROM users WHERE id = %s::uuid",
+            (user_id,),
+        )
+        user = cur.fetchone()
+
+        cur.execute(
+            """INSERT INTO mercados_propuestos
+                   (nombre_mercado, tipo_mercado, tipo_mercado_otro, estado, municipio,
+                    localidad_colonia, latitud, longitud, dias_operacion, horario,
+                    referencia, observaciones, created_by,
+                    tipo_capturista, cac_id, cac_nombre, territorio, ruta)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::uuid,
+                       %s, %s, %s, %s, %s)
+               RETURNING id, status, created_at""",
+            (
+                data.nombre_mercado.strip(), data.tipo_mercado, data.tipo_mercado_otro,
+                data.estado, data.municipio, data.localidad_colonia,
+                data.latitud, data.longitud, data.dias_operacion,
+                data.horario, data.referencia, data.observaciones, user_id,
+                user["tipo_capturista"] if user else None,
+                user["cac_id"] if user else None,
+                user["cac_nombre"] if user else None,
+                user["territorio"] if user else None,
+                user["ruta"] if user else None,
+            ),
+        )
+        r = cur.fetchone()
+
+    return MercadoPropuestoOut(
+        id=r["id"],
+        nombre_mercado=data.nombre_mercado.strip(),
+        tipo_mercado=data.tipo_mercado,
+        tipo_mercado_otro=data.tipo_mercado_otro,
+        estado=data.estado,
+        municipio=data.municipio,
+        localidad_colonia=data.localidad_colonia,
+        latitud=data.latitud,
+        longitud=data.longitud,
+        dias_operacion=data.dias_operacion,
+        horario=data.horario,
+        referencia=data.referencia,
+        observaciones=data.observaciones,
+        status=r["status"],
+        created_at=r["created_at"].isoformat(),
+    )
+
+
+@router.get("/propuestos", response_model=List[MercadoPropuestoOut])
+def list_mercados_propuestos(user_id: str = Depends(get_current_user_id)):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """SELECT id, nombre_mercado, tipo_mercado, tipo_mercado_otro,
+                      estado, municipio, localidad_colonia, latitud, longitud,
+                      dias_operacion, horario, referencia, observaciones,
+                      status, created_at
+               FROM mercados_propuestos
+               WHERE created_by = %s::uuid
+               ORDER BY created_at DESC""",
+            (user_id,),
+        )
+        rows = cur.fetchall()
+    return [
+        MercadoPropuestoOut(
+            id=r["id"],
+            nombre_mercado=r["nombre_mercado"],
+            tipo_mercado=r["tipo_mercado"],
+            tipo_mercado_otro=r["tipo_mercado_otro"],
+            estado=r["estado"],
+            municipio=r["municipio"],
+            localidad_colonia=r["localidad_colonia"],
+            latitud=r["latitud"],
+            longitud=r["longitud"],
+            dias_operacion=r["dias_operacion"],
+            horario=r["horario"],
+            referencia=r["referencia"],
+            observaciones=r["observaciones"],
+            status=r["status"],
             created_at=r["created_at"].isoformat(),
         )
         for r in rows

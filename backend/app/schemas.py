@@ -206,3 +206,38 @@ class PrecioHistorialItem(BaseModel):
     tipo_precio: str
     fecha: str
     created_at: str
+
+
+# ── Mercados propuestos ──
+
+class MercadoPropuestoCreate(BaseModel):
+    nombre_mercado: str
+    tipo_mercado: str
+    tipo_mercado_otro: Optional[str] = None
+    estado: str
+    municipio: str
+    localidad_colonia: Optional[str] = None
+    latitud: float
+    longitud: float
+    dias_operacion: List[str]
+    horario: Optional[str] = None
+    referencia: Optional[str] = None
+    observaciones: Optional[str] = None
+
+
+class MercadoPropuestoOut(BaseModel):
+    id: int
+    nombre_mercado: str
+    tipo_mercado: str
+    tipo_mercado_otro: Optional[str] = None
+    estado: str
+    municipio: str
+    localidad_colonia: Optional[str] = None
+    latitud: float
+    longitud: float
+    dias_operacion: List[str]
+    horario: Optional[str] = None
+    referencia: Optional[str] = None
+    observaciones: Optional[str] = None
+    status: str
+    created_at: str

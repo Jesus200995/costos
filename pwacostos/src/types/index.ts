@@ -185,3 +185,38 @@ export interface PrecioHistorialItem {
   fecha: string
   created_at: string
 }
+
+// ── Mercados propuestos ──
+
+export interface MercadoPropuestoCreate {
+  nombre_mercado: string
+  tipo_mercado: string
+  tipo_mercado_otro?: string
+  estado: string
+  municipio: string
+  localidad_colonia?: string
+  latitud: number
+  longitud: number
+  dias_operacion: string[]
+  horario?: string
+  referencia?: string
+  observaciones?: string
+}
+
+export interface MercadoPropuesto {
+  id: number
+  nombre_mercado: string
+  tipo_mercado: string
+  tipo_mercado_otro?: string
+  estado: string
+  municipio: string
+  localidad_colonia?: string
+  latitud: number
+  longitud: number
+  dias_operacion: string[]
+  horario?: string
+  referencia?: string
+  observaciones?: string
+  status: string
+  created_at: string
+}
