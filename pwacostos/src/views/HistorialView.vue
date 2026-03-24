@@ -5,75 +5,83 @@
 
     <main class="main-content" @click="closeSidebar">
       <div class="historial-page">
-        <div class="section-header">
-          <ClipboardList :size="24" />
-          <h1>Historial de Precios</h1>
-        </div>
+        <!-- Header fijo -->
+        <div class="historial-top">
+          <div class="section-header">
+            <ClipboardList :size="24" />
+            <div>
+              <h1>Historial de Precios</h1>
+              <p class="section-subtitle">Selecciona fechas y filtros para consultar tus capturas</p>
+            </div>
+          </div>
 
-        <!-- Filtros -->
-        <div class="filtros-card">
-          <div class="filtros-fechas">
-            <div class="filtro-group">
-              <label class="filtro-label">
-                <Calendar :size="12" /> Desde
-              </label>
-              <div class="date-wrapper">
-                <input v-model="fechaDesde" type="date" class="input input--date" @change="loadHistorial" />
+          <!-- Filtros -->
+          <div class="filtros-card">
+            <div class="filtros-fechas">
+              <div class="filtro-group">
+                <label class="filtro-label">
+                  <Calendar :size="12" /> Desde
+                </label>
+                <div class="date-wrapper">
+                  <input v-model="fechaDesde" type="date" class="input input--date" @change="loadHistorial" />
+                </div>
+              </div>
+              <div class="filtro-group">
+                <label class="filtro-label">
+                  <Calendar :size="12" /> Hasta
+                </label>
+                <div class="date-wrapper">
+                  <input v-model="fechaHasta" type="date" class="input input--date" @change="loadHistorial" />
+                </div>
               </div>
             </div>
             <div class="filtro-group">
-              <label class="filtro-label">
-                <Calendar :size="12" /> Hasta
-              </label>
-              <div class="date-wrapper">
-                <input v-model="fechaHasta" type="date" class="input input--date" @change="loadHistorial" />
+              <label class="filtro-label">Mercado</label>
+              <select v-model="filtroMercado" class="input input--select" @change="applyFilters">
+                <option value="">Todos los mercados</option>
+                <option v-for="m in mercadosUnicos" :key="m" :value="m">{{ m }}</option>
+              </select>
+            </div>
+            <div class="filtro-group">
+              <label class="filtro-label">Tipo</label>
+              <div class="toggle-pills">
+                <button class="toggle-pill" :class="{ 'toggle-pill--active': filtroTipo === '' }" @click="filtroTipo = ''; applyFilters()">Todos</button>
+                <button class="toggle-pill" :class="{ 'toggle-pill--active': filtroTipo === 'MENUDEO' }" @click="filtroTipo = 'MENUDEO'; applyFilters()">Menudeo</button>
+                <button class="toggle-pill" :class="{ 'toggle-pill--active': filtroTipo === 'MAYOREO' }" @click="filtroTipo = 'MAYOREO'; applyFilters()">Mayoreo</button>
               </div>
             </div>
+            <button v-if="fechaDesde || fechaHasta || filtroMercado || filtroTipo" class="btn-clear" @click="clearFilters">
+              <X :size="14" /> Limpiar filtros
+            </button>
           </div>
-          <div class="filtro-group">
-            <label class="filtro-label">Mercado</label>
-            <select v-model="filtroMercado" class="input input--select" @change="applyFilters">
-              <option value="">Todos los mercados</option>
-              <option v-for="m in mercadosUnicos" :key="m" :value="m">{{ m }}</option>
-            </select>
+
+          <!-- Stats resumen -->
+          <div v-if="!loading && historialFiltrado.length > 0" class="resumen-bar">
+            <span class="resumen-item"><strong>{{ historialFiltrado.length }}</strong> registros</span>
+            <span class="resumen-sep">·</span>
+            <span class="resumen-item"><strong>{{ mercadosCount }}</strong> mercados</span>
+            <span class="resumen-sep">·</span>
+            <span class="resumen-item"><strong>{{ productosCount }}</strong> productos</span>
           </div>
-          <div class="filtro-group">
-            <label class="filtro-label">Tipo</label>
-            <div class="toggle-pills">
-              <button class="toggle-pill" :class="{ 'toggle-pill--active': filtroTipo === '' }" @click="filtroTipo = ''; applyFilters()">Todos</button>
-              <button class="toggle-pill" :class="{ 'toggle-pill--active': filtroTipo === 'MENUDEO' }" @click="filtroTipo = 'MENUDEO'; applyFilters()">Menudeo</button>
-              <button class="toggle-pill" :class="{ 'toggle-pill--active': filtroTipo === 'MAYOREO' }" @click="filtroTipo = 'MAYOREO'; applyFilters()">Mayoreo</button>
-            </div>
+        </div>
+
+        <!-- Contenedor scrollable de resultados -->
+        <div class="historial-results">
+          <!-- Loading -->
+          <div v-if="loading" class="loading-state">
+            <div class="spinner"></div>
+            <p>Cargando historial...</p>
           </div>
-          <button v-if="fechaDesde || fechaHasta || filtroMercado || filtroTipo" class="btn-clear" @click="clearFilters">
-            <X :size="14" /> Limpiar filtros
-          </button>
-        </div>
 
-        <!-- Stats resumen -->
-        <div v-if="!loading && historialFiltrado.length > 0" class="resumen-bar">
-          <span class="resumen-item"><strong>{{ historialFiltrado.length }}</strong> registros</span>
-          <span class="resumen-sep">·</span>
-          <span class="resumen-item"><strong>{{ mercadosCount }}</strong> mercados</span>
-          <span class="resumen-sep">·</span>
-          <span class="resumen-item"><strong>{{ productosCount }}</strong> productos</span>
-        </div>
+          <!-- Empty -->
+          <div v-else-if="historialFiltrado.length === 0" class="empty-state">
+            <ClipboardList :size="48" />
+            <p>{{ historial.length === 0 ? 'No hay precios registrados' : 'Sin resultados con estos filtros' }}</p>
+            <p class="empty-state__hint">{{ historial.length === 0 ? 'Captura precios en la sección de Mercados' : 'Prueba cambiando los filtros' }}</p>
+          </div>
 
-        <!-- Loading -->
-        <div v-if="loading" class="loading-state">
-          <div class="spinner"></div>
-          <p>Cargando historial...</p>
-        </div>
-
-        <!-- Empty -->
-        <div v-else-if="historialFiltrado.length === 0" class="empty-state">
-          <ClipboardList :size="48" />
-          <p>{{ historial.length === 0 ? 'No hay precios registrados' : 'Sin resultados con estos filtros' }}</p>
-          <p class="empty-state__hint">{{ historial.length === 0 ? 'Captura precios en la sección de Mercados' : 'Prueba cambiando los filtros' }}</p>
-        </div>
-
-        <!-- Lista agrupada por fecha -->
-        <div v-else class="historial-groups">
+          <!-- Lista agrupada por fecha -->
+          <div v-else class="historial-groups">
           <div v-for="group in groupedByDate" :key="group.fecha" class="historial-group">
             <div class="group-date">
               <Calendar :size="14" />
@@ -106,6 +114,7 @@
                 </div>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>
@@ -211,35 +220,58 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* ── Layout de página ── */
+.main-content {
+  padding-top: 60px;
+  height: 100vh;
+  background: #fafafa;
+  overflow: hidden;
+}
 .historial-page {
   max-width: 640px;
   margin: 0 auto;
-  padding: 1rem 1rem 2rem;
+  padding: 0.85rem 1rem 0;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px);
+  overflow: hidden;
+}
+
+/* ── Header + filtros (siempre visible) ── */
+.historial-top {
+  flex-shrink: 0;
 }
 .section-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.75rem;
   color: #1B5E20;
 }
 .section-header h1 {
-  font-size: 1.35rem;
+  font-size: 1.3rem;
   font-weight: 700;
   margin: 0;
+  line-height: 1.2;
+}
+.section-subtitle {
+  font-size: 0.78rem;
+  color: #888;
+  font-weight: 400;
+  margin: 0.15rem 0 0;
 }
 
 /* ── Filtros ── */
 .filtros-card {
-  background: #fafafa;
-  border: 1.5px solid #e8e8e8;
+  background: #fff;
+  border: 1.5px solid #c8e6c9;
   border-radius: 14px;
   padding: 0.85rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  overflow: hidden;
+  gap: 0.55rem;
+  box-shadow: 0 1px 4px rgba(27,94,32,0.06);
 }
 .filtros-fechas {
   display: grid;
@@ -255,20 +287,20 @@ onMounted(() => {
   gap: 0.25rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #888;
+  color: #1B5E20;
   margin-bottom: 0.25rem;
 }
 
 /* ── Inputs & Date ── */
 .input {
   width: 100%;
-  padding: 0.55rem 0.7rem;
-  border: 1.5px solid #e0e0e0;
+  padding: 0.5rem 0.65rem;
+  border: 1.5px solid #c8e6c9;
   border-radius: 10px;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   color: #333;
-  background: #fff;
-  transition: border-color 0.15s;
+  background: #f9fdf9;
+  transition: border-color 0.15s, box-shadow 0.15s;
   box-sizing: border-box;
   min-width: 0;
   -webkit-appearance: none;
@@ -277,14 +309,15 @@ onMounted(() => {
 .input:focus {
   border-color: #1B5E20;
   outline: none;
+  box-shadow: 0 0 0 2px rgba(27,94,32,0.1);
 }
 .date-wrapper {
   position: relative;
 }
 .input--date {
-  padding: 0.55rem 0.7rem;
-  font-size: 0.85rem;
-  min-height: 40px;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.84rem;
+  min-height: 38px;
   color-scheme: light;
 }
 .input--date::-webkit-calendar-picker-indicator {
@@ -292,11 +325,11 @@ onMounted(() => {
   cursor: pointer;
 }
 .input--select {
-  padding: 0.55rem 0.7rem;
-  font-size: 0.85rem;
-  min-height: 40px;
-  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 0.6rem center;
-  padding-right: 2rem;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.84rem;
+  min-height: 38px;
+  background: #f9fdf9 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231B5E20' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 0.55rem center;
+  padding-right: 1.9rem;
 }
 
 /* ── Toggle pills ── */
@@ -306,13 +339,13 @@ onMounted(() => {
 }
 .toggle-pill {
   flex: 1;
-  padding: 0.45rem 0.5rem;
-  border: 1.5px solid #e0e0e0;
+  padding: 0.4rem 0.45rem;
+  border: 1.5px solid #c8e6c9;
   border-radius: 8px;
   background: #fff;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #888;
+  color: #666;
   cursor: pointer;
   transition: all 0.15s;
   text-align: center;
@@ -328,12 +361,12 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.35rem 0.6rem;
+  padding: 0.3rem 0.55rem;
   border: none;
   background: #ffebee;
   color: #c62828;
   border-radius: 8px;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 600;
   cursor: pointer;
   align-self: flex-start;
@@ -345,21 +378,38 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: 0.5rem;
-  font-size: 0.8rem;
-  color: #777;
-  margin-bottom: 0.75rem;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.78rem;
+  color: #1B5E20;
+  margin-bottom: 0.45rem;
   flex-wrap: wrap;
+  background: #e8f5e9;
+  border-radius: 8px;
+  font-weight: 500;
 }
 .resumen-sep {
-  color: #ddd;
+  color: #a5d6a7;
+}
+
+/* ── Contenedor scrollable de resultados ── */
+.historial-results {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: #fff;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 14px;
+  padding: 0.65rem;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── Loading / Empty ── */
 .loading-state,
 .empty-state {
   text-align: center;
-  padding: 3rem 1rem;
+  padding: 2.5rem 1rem;
   color: #bbb;
 }
 .loading-state p,
@@ -389,7 +439,7 @@ onMounted(() => {
 .historial-groups {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.85rem;
 }
 .group-date {
   display: flex;
@@ -398,9 +448,14 @@ onMounted(() => {
   font-size: 0.82rem;
   font-weight: 700;
   color: #1B5E20;
-  margin-bottom: 0.4rem;
-  padding-bottom: 0.3rem;
+  margin-bottom: 0.35rem;
+  padding-bottom: 0.25rem;
   border-bottom: 1.5px solid #e8f5e9;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+  padding-top: 0.1rem;
 }
 .group-count {
   margin-left: auto;
@@ -414,28 +469,28 @@ onMounted(() => {
 .group-items {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.3rem;
 }
 
-/* ── Item (2-row layout) ── */
+/* ── Item (2 filas) ── */
 .hist-item {
   display: flex;
   flex-direction: column;
-  background: #fff;
-  border: 1.5px solid #f0f0f0;
+  background: #fafffe;
+  border: 1px solid #e8f5e9;
   border-radius: 10px;
-  padding: 0.6rem 0.7rem;
-  gap: 0.3rem;
+  padding: 0.5rem 0.6rem;
+  gap: 0.2rem;
 }
 .hist-item__top {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
 }
 .hist-item__cat {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -456,7 +511,7 @@ onMounted(() => {
   flex-direction: column;
 }
 .hist-item__product {
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-weight: 700;
   color: #333;
   overflow: hidden;
@@ -464,7 +519,7 @@ onMounted(() => {
   white-space: nowrap;
 }
 .hist-item__sub {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: #999;
 }
 .hist-item__price-wrap {
@@ -480,15 +535,15 @@ onMounted(() => {
   white-space: nowrap;
 }
 .hist-item__unit {
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   color: #999;
 }
 .hist-item__bottom {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 0.25rem;
-  border-top: 1px solid #f5f5f5;
+  padding-top: 0.15rem;
+  border-top: 1px solid #f0f0f0;
 }
 .hist-item__market {
   display: flex;
@@ -505,7 +560,7 @@ onMounted(() => {
 .hist-item__badge {
   font-size: 0.65rem;
   font-weight: 700;
-  padding: 0.12rem 0.4rem;
+  padding: 0.1rem 0.38rem;
   border-radius: 4px;
   text-transform: uppercase;
   flex-shrink: 0;
@@ -519,178 +574,185 @@ onMounted(() => {
   color: #e65100;
 }
 
-/* ── Nav ── */
-.main-content {
-  padding-top: 60px;
-  min-height: 100vh;
-  background: #fafafa;
-}
-
 /* ── Responsive 480px ── */
 @media (max-width: 480px) {
   .historial-page {
-    padding: 0.65rem 0.65rem 2rem;
+    padding: 0.55rem 0.55rem 0;
   }
   .section-header {
-    margin-bottom: 0.85rem;
-    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+    gap: 0.35rem;
   }
   .section-header h1 {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
+  }
+  .section-subtitle {
+    font-size: 0.68rem;
   }
   .filtros-card {
-    padding: 0.6rem;
+    padding: 0.55rem;
     border-radius: 11px;
-    gap: 0.5rem;
+    gap: 0.4rem;
+    margin-bottom: 0.35rem;
   }
   .filtros-fechas {
-    gap: 0.4rem;
+    gap: 0.35rem;
   }
   .filtro-label {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
   }
   .input--date,
   .input--select {
-    padding: 0.45rem 0.55rem;
-    font-size: 0.8rem;
-    min-height: 36px;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.78rem;
+    min-height: 34px;
     border-radius: 8px;
   }
   .input--select {
-    padding-right: 1.8rem;
+    padding-right: 1.7rem;
   }
   .toggle-pill {
-    padding: 0.35rem 0.35rem;
-    font-size: 0.73rem;
+    padding: 0.32rem 0.3rem;
+    font-size: 0.72rem;
     border-radius: 7px;
   }
   .btn-clear {
-    font-size: 0.72rem;
-    padding: 0.3rem 0.5rem;
+    font-size: 0.68rem;
+    padding: 0.25rem 0.4rem;
   }
   .resumen-bar {
-    font-size: 0.72rem;
-    padding: 0.35rem;
-    gap: 0.25rem;
+    font-size: 0.68rem;
+    padding: 0.28rem 0.4rem;
+    margin-bottom: 0.3rem;
+    border-radius: 6px;
+  }
+  .historial-results {
+    padding: 0.45rem;
+    border-radius: 11px;
+    margin-bottom: 0.35rem;
   }
   .historial-groups {
-    gap: 0.75rem;
+    gap: 0.6rem;
   }
   .group-date {
-    font-size: 0.75rem;
-    gap: 0.25rem;
+    font-size: 0.74rem;
+    gap: 0.2rem;
   }
   .group-count {
-    font-size: 0.65rem;
-    padding: 0.1rem 0.35rem;
+    font-size: 0.62rem;
+    padding: 0.08rem 0.3rem;
   }
   .group-items {
-    gap: 0.25rem;
+    gap: 0.2rem;
   }
   .hist-item {
-    padding: 0.5rem 0.55rem;
-    gap: 0.25rem;
-    border-radius: 9px;
+    padding: 0.4rem 0.45rem;
+    gap: 0.15rem;
+    border-radius: 8px;
   }
   .hist-item__top {
-    gap: 0.4rem;
+    gap: 0.35rem;
   }
   .hist-item__cat {
-    width: 26px;
-    height: 26px;
-    border-radius: 7px;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
   }
   .hist-item__product {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
   }
   .hist-item__sub {
-    font-size: 0.66rem;
+    font-size: 0.64rem;
   }
   .hist-item__price {
-    font-size: 0.85rem;
+    font-size: 0.84rem;
   }
   .hist-item__unit {
-    font-size: 0.62rem;
+    font-size: 0.58rem;
   }
   .hist-item__market {
-    font-size: 0.66rem;
+    font-size: 0.64rem;
   }
   .hist-item__badge {
-    font-size: 0.6rem;
-    padding: 0.1rem 0.3rem;
+    font-size: 0.56rem;
+    padding: 0.08rem 0.28rem;
   }
   .loading-state,
   .empty-state {
-    padding: 2rem 1rem;
+    padding: 1.5rem 0.75rem;
   }
   .empty-state p {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
   }
   .empty-state__hint {
-    font-size: 0.75rem !important;
+    font-size: 0.7rem !important;
   }
 }
 
 /* ── Responsive 360px ── */
 @media (max-width: 360px) {
   .historial-page {
-    padding: 0.5rem 0.5rem 1.5rem;
+    padding: 0.35rem 0.35rem 0;
   }
   .section-header h1 {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
+  }
+  .section-subtitle {
+    font-size: 0.62rem;
   }
   .filtros-card {
-    padding: 0.5rem;
-    gap: 0.4rem;
+    padding: 0.4rem;
+    gap: 0.3rem;
   }
   .filtros-fechas {
     grid-template-columns: 1fr;
-    gap: 0.3rem;
+    gap: 0.2rem;
   }
   .filtro-label {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
   }
   .input--date,
   .input--select {
-    padding: 0.4rem 0.5rem;
-    font-size: 0.75rem;
-    min-height: 34px;
+    padding: 0.35rem 0.4rem;
+    font-size: 0.72rem;
+    min-height: 32px;
   }
   .toggle-pills {
-    gap: 0.2rem;
+    gap: 0.15rem;
   }
   .toggle-pill {
-    padding: 0.3rem 0.3rem;
-    font-size: 0.68rem;
-  }
-  .resumen-bar {
+    padding: 0.25rem 0.22rem;
     font-size: 0.65rem;
   }
+  .resumen-bar {
+    font-size: 0.62rem;
+  }
+  .historial-results {
+    padding: 0.35rem;
+    border-radius: 9px;
+  }
   .group-date {
-    font-size: 0.7rem;
+    font-size: 0.66rem;
   }
   .hist-item {
-    padding: 0.4rem 0.45rem;
+    padding: 0.35rem 0.38rem;
   }
   .hist-item__cat {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
   }
   .hist-item__product {
-    font-size: 0.72rem;
-  }
-  .hist-item__sub {
-    font-size: 0.6rem;
+    font-size: 0.7rem;
   }
   .hist-item__price {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
   }
   .hist-item__market {
-    font-size: 0.6rem;
+    font-size: 0.58rem;
   }
   .hist-item__badge {
-    font-size: 0.56rem;
-    padding: 0.08rem 0.25rem;
+    font-size: 0.52rem;
+    padding: 0.06rem 0.2rem;
   }
 }
 </style>
