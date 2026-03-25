@@ -47,6 +47,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/registros-precios',
+      name: 'RegistrosPrecios',
+      component: () => import('@/views/RegistrosPreciosView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/'
     }

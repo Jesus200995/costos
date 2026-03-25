@@ -34,6 +34,10 @@
           <Map :size="18" />
           <span>Visor de Mapa</span>
         </router-link>
+        <router-link to="/registros-precios" class="nav-item" :class="{ active: $route.path === '/registros-precios' }">
+          <ClipboardList :size="18" />
+          <span>Registros Precios</span>
+        </router-link>
       </nav>
 
       <div class="sidebar-footer">
@@ -372,7 +376,7 @@ import { authService } from '@/services/auth.service'
 import type { MercadoPropuesto } from '@/types'
 import {
   Layers, LayoutDashboard, Users, Map, Store, LogOut,
-  Search, X, ListFilter, MapPin, Eye, CheckCircle, XCircle, Clock
+  Search, X, ListFilter, MapPin, Eye, CheckCircle, XCircle, Clock, ClipboardList
 } from 'lucide-vue-next'
 
 const auth = useAuthStore()

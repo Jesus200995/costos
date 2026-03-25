@@ -227,6 +227,26 @@ class HistorialGeneralItem(BaseModel):
     created_at: str
 
 
+class RegistroPrecioAdmin(BaseModel):
+    id: int
+    user_id: str
+    user_name: str
+    user_email: str
+    mercado_id: int
+    mercado_nombre: str
+    mercado_entidad: str
+    mercado_municipio: str
+    producto_id: int
+    producto_nombre: str
+    subcategoria_nombre: str
+    categoria_id: str
+    precio: float
+    unidad: str
+    tipo_precio: str
+    fecha: str
+    created_at: str
+
+
 class MercadoPropuestoCreate(BaseModel):
     nombre_mercado: str
     tipo_mercado: str

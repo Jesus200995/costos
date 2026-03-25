@@ -38,6 +38,10 @@
           <Map :size="18" />
           <span>Visor de Mapa</span>
         </router-link>
+        <router-link to="/registros-precios" class="nav-item" :class="{ active: $route.path === '/registros-precios' }">
+          <ClipboardList :size="18" />
+          <span>Registros Precios</span>
+        </router-link>
       </nav>
 
       <div class="sidebar-footer">
@@ -79,7 +83,7 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import {
-  Layers, LayoutDashboard, Users, LogOut, Map, Store
+  Layers, LayoutDashboard, Users, LogOut, Map, Store, ClipboardList
 } from 'lucide-vue-next'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'

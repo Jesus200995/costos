@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional, List
 from app.database import get_db
@@ -755,3 +755,87 @@ def rechazar_propuesta(propuesta_id: int, token: str):
         )
 
     return {"message": "Propuesta rechazada"}
+
+
+# ═══════════════════════════════════════════════════════════════════
+# REGISTROS DE PRECIOS (todos los usuarios)
+# ═══════════════════════════════════════════════════════════════════
+
+@router.get("/registros-precios")
+def list_registros_precios(
+    token: str,
+    fecha_desde: Optional[str] = Query(None),
+    fecha_hasta: Optional[str] = Query(None),
+    producto: Optional[str] = Query(None),
+    mercado: Optional[str] = Query(None),
+    tipo_precio: Optional[str] = Query(None),
+    usuario: Optional[str] = Query(None),
+):
+    require_admin(token)
+
+    with get_db() as conn:
+        cur = conn.cursor()
+        query = """
+            SELECT d.id, r.user_id, u.name AS user_name, u.email AS user_email,
+                   r.mercado_id, cm.nombre AS mercado_nombre,
+                   cm.entidad AS mercado_entidad, cm.municipio AS mercado_municipio,
+                   d.producto_id, p.nombre AS producto_nombre,
+                   s.nombre AS subcategoria_nombre, s.categoria_id,
+                   d.precio, d.unidad, r.tipo_precio, r.fecha, r.created_at
+            FROM detalle_precios d
+            JOIN reportes_precios r ON r.id = d.reporte_id
+            JOIN productos p ON p.id = d.producto_id
+            JOIN subcategorias s ON s.id = p.subcategoria_id
+            JOIN mercados m ON m.id = r.mercado_id
+            JOIN catalogo_mercados cm ON cm.id = m.catalogo_mercado_id
+            JOIN users u ON u.id = r.user_id
+            WHERE 1=1
+        """
+        params: list = []
+
+        if fecha_desde:
+            query += " AND r.fecha >= %s"
+            params.append(fecha_desde)
+        if fecha_hasta:
+            query += " AND r.fecha <= %s"
+            params.append(fecha_hasta)
+        if producto:
+            query += " AND LOWER(p.nombre) LIKE LOWER(%s)"
+            params.append(f"%{producto}%")
+        if mercado:
+            query += " AND LOWER(cm.nombre) LIKE LOWER(%s)"
+            params.append(f"%{mercado}%")
+        if tipo_precio:
+            query += " AND r.tipo_precio = %s"
+            params.append(tipo_precio)
+        if usuario:
+            query += " AND (LOWER(u.name) LIKE LOWER(%s) OR LOWER(u.email) LIKE LOWER(%s))"
+            params.append(f"%{usuario}%")
+            params.append(f"%{usuario}%")
+
+        query += " ORDER BY r.created_at DESC"
+        cur.execute(query, params)
+        rows = cur.fetchall()
+
+    return [
+        {
+            "id": r["id"],
+            "user_id": str(r["user_id"]),
+            "user_name": r["user_name"],
+            "user_email": r["user_email"],
+            "mercado_id": r["mercado_id"],
+            "mercado_nombre": r["mercado_nombre"],
+            "mercado_entidad": r["mercado_entidad"],
+            "mercado_municipio": r["mercado_municipio"],
+            "producto_id": r["producto_id"],
+            "producto_nombre": r["producto_nombre"],
+            "subcategoria_nombre": r["subcategoria_nombre"],
+            "categoria_id": r["categoria_id"],
+            "precio": float(r["precio"]),
+            "unidad": r["unidad"],
+            "tipo_precio": r["tipo_precio"],
+            "fecha": r["fecha"].isoformat(),
+            "created_at": r["created_at"].isoformat(),
+        }
+        for r in rows
+    ]

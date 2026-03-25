@@ -38,6 +38,10 @@
           <Map :size="18" />
           <span>Visor de Mapa</span>
         </router-link>
+        <router-link to="/registros-precios" class="nav-item" :class="{ active: $route.path === '/registros-precios' }">
+          <ClipboardList :size="18" />
+          <span>Registros Precios</span>
+        </router-link>
       </nav>
 
       <div class="sidebar-footer">
@@ -377,7 +381,7 @@ import {
   Shield, LayoutDashboard, Users, LogOut, Trash2, RefreshCw, AlertTriangle,
   Layers, Search, X, ChevronDown, ChevronLeft, ChevronRight,
   ListFilter, CircleDot, UserCheck, UserX, ShieldCheck,
-  Eye, Pencil, Save, Loader2, CheckCircle, Map, Store
+  Eye, Pencil, Save, Loader2, CheckCircle, Map, Store, ClipboardList
 } from 'lucide-vue-next'
 
 const router = useRouter()
