@@ -529,7 +529,7 @@ onMounted(async () => {
 
   map = new mapboxgl.Map({
     container: mapContainer.value,
-    style: 'mapbox://styles/mapbox/light-v11',
+    style: 'mapbox://styles/mapbox/streets-v12',
     center: [-102.5528, 23.6345],
     zoom: 4.8,
     attributionControl: false,
@@ -669,12 +669,12 @@ onBeforeUnmount(() => {
 
 /* map markers */
 :deep(.marker-dot) {
-  width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.3); cursor: pointer;
+  width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.35); cursor: pointer;
 }
-:deep(.marker-denue) { background: #9ca3af; width: 7px; height: 7px; cursor: default; }
-:deep(.marker-reported) { background: #22c55e; width: 12px; height: 12px; }
-:deep(.marker-proposed) { background: #f59e0b; width: 9px; height: 9px; }
+:deep(.marker-denue) { background: #9ca3af; width: 11px; height: 11px; cursor: default; }
+:deep(.marker-reported) { background: #22c55e; width: 16px; height: 16px; }
+:deep(.marker-proposed) { background: #f59e0b; width: 13px; height: 13px; }
 
 /* Popup overlay */
 .map-popup-overlay {
