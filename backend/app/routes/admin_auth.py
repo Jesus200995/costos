@@ -1133,51 +1133,79 @@ def monitoreo_mercado_precios(
     mercado_id: int,
     token: str = None,
     producto_id: Optional[int] = None,
+    fuente: Optional[str] = None,
 ):
-    """Detalle de precios de un mercado específico — para popup del mapa."""
+    """Detalle de precios de un mercado específico — para popup del mapa.
+    fuente = DENUE | AUTORIZADO | PROPUESTO  (determina en qué tabla buscar).
+    """
     require_admin(token)
 
     with get_db() as conn:
         cur = conn.cursor()
+        mercado = None
+        precios: list = []
 
-        # Info del mercado
-        cur.execute(
-            """SELECT m.id, m.nombre, m.latitud, m.longitud,
-                      cm.entidad, cm.municipio, cm.localidad, cm.tipo AS tipo_mercado
-                 FROM mercados m
-                 LEFT JOIN catalogo_mercados cm ON cm.id = m.catalogo_mercado_id
-                WHERE m.id = %s""",
-            (mercado_id,),
-        )
-        mercado = cur.fetchone()
+        if fuente == "DENUE":
+            cur.execute(
+                """SELECT id, nombre, latitud, longitud,
+                          entidad, municipio, localidad, tipo AS tipo_mercado
+                     FROM catalogo_mercados WHERE id = %s""",
+                (mercado_id,),
+            )
+            mercado = cur.fetchone()
+
+        elif fuente == "PROPUESTO":
+            cur.execute(
+                """SELECT id, nombre_mercado AS nombre, latitud, longitud,
+                          estado AS entidad, municipio,
+                          localidad_colonia AS localidad,
+                          tipo_mercado, status
+                     FROM mercados_propuestos WHERE id = %s""",
+                (mercado_id,),
+            )
+            mercado = cur.fetchone()
+
+        else:
+            # AUTORIZADO / reportado — tabla mercados
+            cur.execute(
+                """SELECT m.id, m.nombre, m.latitud, m.longitud,
+                          cm.entidad, cm.municipio, cm.localidad,
+                          cm.tipo AS tipo_mercado
+                     FROM mercados m
+                     LEFT JOIN catalogo_mercados cm ON cm.id = m.catalogo_mercado_id
+                    WHERE m.id = %s""",
+                (mercado_id,),
+            )
+            mercado = cur.fetchone()
+
         if not mercado:
             raise HTTPException(404, "Mercado no encontrado")
 
-        # Últimos precios
-        where_prod = "AND dp.producto_id = %s" if producto_id else ""
-        params: list = [mercado_id]
-        if producto_id:
-            params.append(producto_id)
+        # Precios solo existen para mercados autorizados (tabla mercados → reportes_precios)
+        if fuente != "DENUE" and fuente != "PROPUESTO":
+            where_prod = "AND dp.producto_id = %s" if producto_id else ""
+            params: list = [mercado_id]
+            if producto_id:
+                params.append(producto_id)
 
-        cur.execute(
-            f"""SELECT dp.id, p.nombre AS producto, dp.precio, dp.unidad,
-                       rp.tipo_precio, rp.fecha, rp.created_at,
-                       u.nombre || ' ' || u.apellido_paterno AS capturista
-                  FROM detalle_precios dp
-                  JOIN reportes_precios rp ON rp.id = dp.reporte_id
-                  JOIN productos p ON p.id = dp.producto_id
-                  JOIN users u ON u.id = rp.user_id
-                 WHERE rp.mercado_id = %s {where_prod}
-                 ORDER BY rp.created_at DESC
-                 LIMIT 20""",
-            params,
-        )
-        precios = []
-        for r in cur.fetchall():
-            d = dict(r)
-            d["fecha"] = d["fecha"].isoformat() if d["fecha"] else None
-            d["created_at"] = d["created_at"].isoformat() if d["created_at"] else None
-            d["precio"] = float(d["precio"])
-            precios.append(d)
+            cur.execute(
+                f"""SELECT dp.id, p.nombre AS producto, dp.precio, dp.unidad,
+                           rp.tipo_precio, rp.fecha, rp.created_at,
+                           u.nombre || ' ' || u.apellido_paterno AS capturista
+                      FROM detalle_precios dp
+                      JOIN reportes_precios rp ON rp.id = dp.reporte_id
+                      JOIN productos p ON p.id = dp.producto_id
+                      JOIN users u ON u.id = rp.user_id
+                     WHERE rp.mercado_id = %s {where_prod}
+                     ORDER BY rp.created_at DESC
+                     LIMIT 20""",
+                params,
+            )
+            for r in cur.fetchall():
+                d = dict(r)
+                d["fecha"] = d["fecha"].isoformat() if d["fecha"] else None
+                d["created_at"] = d["created_at"].isoformat() if d["created_at"] else None
+                d["precio"] = float(d["precio"])
+                precios.append(d)
 
     return {"mercado": dict(mercado), "precios": precios}

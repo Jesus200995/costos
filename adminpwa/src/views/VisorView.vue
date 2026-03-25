@@ -151,32 +151,83 @@
         <!-- CENTER: Map -->
         <div class="panel panel-map">
           <div ref="mapContainer" class="map-container"></div>
+
           <!-- Popup overlay -->
-          <div v-if="selectedMercado" class="map-popup-overlay" @click.self="selectedMercado = null">
+          <div v-if="selectedMercado" class="map-popup-overlay" @click.self="closePopup">
             <div class="map-popup">
+              <!-- Header -->
               <div class="popup-header">
-                <h4>{{ selectedMercado.mercado_nombre || selectedMercado.nombre }}</h4>
-                <button @click="selectedMercado = null" class="popup-close">&times;</button>
+                <div class="popup-header-left">
+                  <span class="popup-fuente-badge" :class="'badge-' + selectedFuente.toLowerCase()">
+                    {{ selectedFuente === 'DENUE' ? '📊 DENUE' : selectedFuente === 'PROPUESTO' ? '📝 Propuesto' : '✅ Con reporte' }}
+                  </span>
+                  <h4>{{ selectedMercado.mercado_nombre || selectedMercado.nombre || selectedMercado.nombre_mercado || 'Sin nombre' }}</h4>
+                </div>
+                <button @click="closePopup" class="popup-close">&times;</button>
               </div>
+
+              <!-- Meta info -->
               <div class="popup-meta">
-                <span><MapPin :size="13" /> {{ selectedMercado.entidad }}, {{ selectedMercado.municipio }}</span>
-                <span v-if="selectedMercado.tipo_mercado">{{ selectedMercado.tipo_mercado }}</span>
+                <span v-if="selectedMercado.entidad"><MapPin :size="13" /> {{ selectedMercado.entidad }}{{ selectedMercado.municipio ? ', ' + selectedMercado.municipio : '' }}</span>
+                <span v-if="selectedMercado.localidad"><Store :size="13" /> {{ selectedMercado.localidad }}</span>
+                <span v-if="selectedMercado.tipo_mercado"><Layers :size="13" /> {{ selectedMercado.tipo_mercado }}</span>
               </div>
-              <div v-if="popupPrecios.length" class="popup-precios">
-                <table>
-                  <thead><tr><th>Producto</th><th>Precio</th><th>Unidad</th><th>Tipo</th><th>Fecha</th></tr></thead>
-                  <tbody>
-                    <tr v-for="pr in popupPrecios" :key="pr.id">
-                      <td>{{ pr.producto }}</td>
-                      <td class="price">${{ pr.precio.toFixed(2) }}</td>
-                      <td>{{ pr.unidad }}</td>
-                      <td><span class="badge" :class="pr.tipo_precio === 'MENUDEO' ? 'badge-men' : 'badge-may'">{{ pr.tipo_precio }}</span></td>
-                      <td>{{ pr.fecha }}</td>
-                    </tr>
-                  </tbody>
-                </table>
+
+              <!-- DENUE info -->
+              <div v-if="selectedFuente === 'DENUE'" class="popup-info-card">
+                <div class="info-icon">📊</div>
+                <div class="info-text">
+                  <strong>Mercado del catálogo DENUE</strong>
+                  <p>Este mercado proviene del Directorio Estadístico Nacional de Unidades Económicas. No tiene reportes de precios aún.</p>
+                </div>
               </div>
-              <div v-else class="popup-empty">Sin precios registrados</div>
+
+              <!-- Propuesto info -->
+              <div v-else-if="selectedFuente === 'PROPUESTO'" class="popup-info-card popup-info-proposed">
+                <div class="info-icon">📝</div>
+                <div class="info-text">
+                  <strong>Mercado propuesto por usuario</strong>
+                  <p>Estatus: <span class="status-badge" :class="'st-' + (selectedMercado.status || 'pendiente').toLowerCase()">{{ selectedMercado.status || 'Pendiente' }}</span></p>
+                </div>
+              </div>
+
+              <!-- Reportado: tabla de precios -->
+              <div v-else>
+                <div v-if="loadingPopup" class="popup-loading">
+                  <RefreshCw :size="20" class="spinning" /> Cargando precios…
+                </div>
+                <div v-else-if="popupPrecios.length" class="popup-precios">
+                  <div class="popup-precios-header">
+                    <ClipboardList :size="14" /> <strong>Últimos precios registrados</strong>
+                  </div>
+                  <table>
+                    <thead>
+                      <tr><th>Producto</th><th>Precio</th><th>Unidad</th><th>Tipo</th><th>Fecha</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="pr in popupPrecios" :key="pr.id">
+                        <td>{{ pr.producto }}</td>
+                        <td class="price">${{ Number(pr.precio).toFixed(2) }}</td>
+                        <td>{{ pr.unidad }}</td>
+                        <td><span class="badge" :class="pr.tipo_precio === 'MENUDEO' ? 'badge-men' : 'badge-may'">{{ pr.tipo_precio }}</span></td>
+                        <td>{{ pr.fecha }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div v-else class="popup-info-card popup-info-empty">
+                  <div class="info-icon">📭</div>
+                  <div class="info-text">
+                    <strong>Sin precios registrados</strong>
+                    <p>Este mercado está autorizado pero aún no tiene reportes de precios capturados.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Coords -->
+              <div class="popup-coords">
+                <span>🌐 {{ Number(selectedMercado.latitud).toFixed(5) }}, {{ Number(selectedMercado.longitud).toFixed(5) }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -299,7 +350,9 @@ const kpis = ref<any>({})
 
 // Popup
 const selectedMercado = ref<any>(null)
+const selectedFuente = ref<string>('')
 const popupPrecios = ref<any[]>([])
+const loadingPopup = ref(false)
 
 // Map markers references
 let mapMarkers: mapboxgl.Marker[] = []
@@ -433,8 +486,10 @@ async function loadPreciosEstado() {
   }
 }
 
-async function loadMercadoPrecios(mercadoId: number) {
-  const params: any = {}
+async function loadMercadoPrecios(mercadoId: number, fuente: string) {
+  selectedFuente.value = fuente
+  loadingPopup.value = true
+  const params: any = { fuente }
   if (filtros.producto_id) params.producto_id = filtros.producto_id
   try {
     const { data } = await api.get(`/admin/monitoreo/mercado/${mercadoId}/precios`, { params })
@@ -442,7 +497,15 @@ async function loadMercadoPrecios(mercadoId: number) {
     popupPrecios.value = data.precios || []
   } catch {
     popupPrecios.value = []
+  } finally {
+    loadingPopup.value = false
   }
+}
+
+function closePopup() {
+  selectedMercado.value = null
+  selectedFuente.value = ''
+  popupPrecios.value = []
 }
 
 async function loadAll() {
@@ -477,6 +540,12 @@ function renderMarkers() {
       if (!m.latitud || !m.longitud) return
       const el = document.createElement('div')
       el.className = 'marker-dot marker-denue'
+      el.addEventListener('click', (e) => {
+        e.stopPropagation()
+        selectedMercado.value = m
+        popupPrecios.value = []
+        loadMercadoPrecios(m.id, 'DENUE')
+      })
       const marker = new mapboxgl.Marker({ element: el })
         .setLngLat([m.longitud, m.latitud])
         .addTo(map!)
@@ -490,10 +559,11 @@ function renderMarkers() {
       if (!m.latitud || !m.longitud) return
       const el = document.createElement('div')
       el.className = 'marker-dot marker-reported'
-      el.addEventListener('click', () => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation()
         selectedMercado.value = m
         popupPrecios.value = []
-        loadMercadoPrecios(m.mercado_id)
+        loadMercadoPrecios(m.mercado_id, 'AUTORIZADO')
       })
       const marker = new mapboxgl.Marker({ element: el })
         .setLngLat([m.longitud, m.latitud])
@@ -508,6 +578,12 @@ function renderMarkers() {
       if (!m.latitud || !m.longitud) return
       const el = document.createElement('div')
       el.className = 'marker-dot marker-proposed'
+      el.addEventListener('click', (e) => {
+        e.stopPropagation()
+        selectedMercado.value = m
+        popupPrecios.value = []
+        loadMercadoPrecios(m.id, 'PROPUESTO')
+      })
       const marker = new mapboxgl.Marker({ element: el })
         .setLngLat([m.longitud, m.latitud])
         .addTo(map!)
@@ -672,37 +748,93 @@ onBeforeUnmount(() => {
   width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff;
   box-shadow: 0 1px 5px rgba(0,0,0,0.35); cursor: pointer;
 }
-:deep(.marker-denue) { background: #9ca3af; width: 11px; height: 11px; cursor: default; }
+:deep(.marker-denue) { background: #9ca3af; width: 11px; height: 11px; }
 :deep(.marker-reported) { background: #22c55e; width: 16px; height: 16px; }
 :deep(.marker-proposed) { background: #f59e0b; width: 13px; height: 13px; }
 
 /* Popup overlay */
 .map-popup-overlay {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.2); display: flex; align-items: flex-start;
-  justify-content: center; padding-top: 60px; z-index: 10;
+  background: rgba(15,23,42,0.35); display: flex; align-items: flex-start;
+  justify-content: center; padding-top: 40px; z-index: 20;
+  backdrop-filter: blur(2px);
 }
 .map-popup {
-  background: #fff; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-  width: 420px; max-height: 70vh; overflow-y: auto;
+  background: #fff; border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,0.22);
+  width: 440px; max-height: 75vh; overflow-y: auto;
+  animation: popupIn .2s ease-out;
 }
+@keyframes popupIn { from { opacity: 0; transform: translateY(-12px) scale(0.97); } to { opacity: 1; transform: none; } }
+
 .popup-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0.85rem 1rem 0.5rem; border-bottom: 1px solid #f1f5f9;
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 1rem 1.1rem 0.65rem; border-bottom: 1px solid #f1f5f9;
 }
-.popup-header h4 { margin: 0; font-size: 0.95rem; color: #1e293b; }
-.popup-close { background: none; border: none; font-size: 1.4rem; color: #94a3b8; cursor: pointer; }
-.popup-meta { padding: 0.5rem 1rem; font-size: 0.75rem; color: #64748b; display: flex; flex-wrap: wrap; gap: 8px; }
-.popup-meta span { display: flex; align-items: center; gap: 3px; }
-.popup-precios { padding: 0 0.5rem 0.75rem; }
+.popup-header-left { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.popup-header h4 { margin: 0; font-size: 1rem; font-weight: 700; color: #1e293b; line-height: 1.3; }
+.popup-fuente-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;
+  width: fit-content; text-transform: uppercase; letter-spacing: .03em;
+}
+.badge-denue { background: #f1f5f9; color: #64748b; }
+.badge-autorizado { background: #dcfce7; color: #166534; }
+.badge-propuesto { background: #fff7ed; color: #9a3412; }
+.popup-close {
+  background: #f8fafc; border: none; font-size: 1.5rem; color: #94a3b8;
+  cursor: pointer; border-radius: 8px; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: all .15s;
+}
+.popup-close:hover { background: #fee2e2; color: #ef4444; }
+
+.popup-meta {
+  padding: 0.6rem 1.1rem; display: flex; flex-wrap: wrap; gap: 10px;
+  font-size: 0.78rem; color: #475569; border-bottom: 1px solid #f8fafc;
+}
+.popup-meta span { display: inline-flex; align-items: center; gap: 4px; }
+
+/* Info cards for DENUE / Propuesto / Empty */
+.popup-info-card {
+  display: flex; gap: 12px; padding: 1rem 1.1rem; align-items: flex-start;
+}
+.popup-info-card .info-icon { font-size: 1.8rem; flex-shrink: 0; margin-top: 2px; }
+.popup-info-card .info-text strong { font-size: 0.85rem; color: #1e293b; display: block; margin-bottom: 3px; }
+.popup-info-card .info-text p { font-size: 0.75rem; color: #64748b; margin: 0; line-height: 1.4; }
+.popup-info-proposed .info-text .status-badge {
+  display: inline-block; padding: 1px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: 700;
+}
+.st-pendiente { background: #fef3c7; color: #92400e; }
+.st-aprobado, .st-autorizado { background: #dcfce7; color: #166534; }
+.st-rechazado { background: #fee2e2; color: #991b1b; }
+.popup-info-empty { opacity: 0.7; }
+
+/* Loading */
+.popup-loading {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 2rem; color: #6366f1; font-size: 0.82rem; font-weight: 500;
+}
+
+/* Precios table */
+.popup-precios { padding: 0 0.6rem 0.75rem; }
+.popup-precios-header {
+  display: flex; align-items: center; gap: 5px; padding: 0.6rem 0.5rem 0.4rem;
+  font-size: 0.78rem; color: #475569;
+}
 .popup-precios table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
-.popup-precios th { text-align: left; padding: 4px 6px; color: #64748b; font-weight: 600; border-bottom: 1px solid #e2e8f0; }
-.popup-precios td { padding: 4px 6px; border-bottom: 1px solid #f8fafc; }
-.popup-empty { padding: 1.5rem; text-align: center; color: #94a3b8; font-size: 0.8rem; }
-.price { font-weight: 700; color: #059669; }
+.popup-precios th { text-align: left; padding: 5px 6px; color: #64748b; font-weight: 600; border-bottom: 1px solid #e2e8f0; }
+.popup-precios td { padding: 5px 6px; border-bottom: 1px solid #f8fafc; }
 .badge { font-size: 0.65rem; padding: 1px 6px; border-radius: 4px; font-weight: 600; }
 .badge-men { background: #dbeafe; color: #2563eb; }
 .badge-may { background: #fef3c7; color: #92400e; }
+
+/* Coords footer */
+.popup-coords {
+  padding: 0.4rem 1.1rem 0.6rem; font-size: 0.68rem; color: #94a3b8;
+  border-top: 1px solid #f8fafc;
+}
+
+.price { font-weight: 700; color: #059669; }
 
 /* ── Right: Analytics ── */
 .panel-analytics { overflow-y: auto; padding-bottom: 0.75rem; }
