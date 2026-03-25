@@ -936,15 +936,24 @@ async function deleteMercado(id: number) {
 // Precarga completa del catálogo para uso offline
 async function preloadCatalogoOffline() {
   try {
+    // Catálogo de mercados completo
     const [todos, munTodos] = await Promise.all([
       mercadosService.getCatalogoTodos(),
       mercadosService.getMunicipiosTodos()
     ])
     await setCatalogo('catalogo_todos', todos)
     await setCatalogo('municipios_todos', munTodos)
-    // Extraer entidades del catálogo completo
     const ents = [...new Set(todos.map(m => m.entidad))].sort()
     await setCatalogo('entidades', ents)
+  } catch { /* offline — se usará cache existente */ }
+
+  try {
+    // Catálogos de productos completos
+    const catProds = await mercadosService.getCatalogosOffline()
+    await setCatalogo('categorias', catProds.categorias)
+    await setCatalogo('all_subcategorias', catProds.subcategorias)
+    await setCatalogo('all_productos', catProds.productos)
+    await setCatalogo('all_unidades', catProds.unidades)
   } catch { /* offline — se usará cache existente */ }
 }
 
@@ -1052,13 +1061,15 @@ async function selectMercado(m: Mercado) {
 
   try {
     if (categorias.value.length === 0) {
-      try {
-        const cats = await mercadosService.getCategorias()
-        categorias.value = cats
-        await setCatalogo('categorias', cats)
-      } catch {
-        const cached = await getCatalogo<Categoria[]>('categorias')
-        if (cached) categorias.value = cached
+      const cached = await getCatalogo<Categoria[]>('categorias')
+      if (cached && cached.length > 0) {
+        categorias.value = cached
+      } else {
+        try {
+          const cats = await mercadosService.getCategorias()
+          categorias.value = cats
+          await setCatalogo('categorias', cats)
+        } catch { /* no data */ }
       }
     }
     try { historial.value = await mercadosService.getPreciosHistorial(m.id) } catch { /* offline ok */ }
@@ -1082,12 +1093,20 @@ async function onCategoriaChange(catId: string) {
   precioValue.value = null
   unidadValue.value = ''
   try {
+    if (!isOnline.value) throw new Error('offline')
     const data = await mercadosService.getSubcategorias(catId)
     subcategorias.value = data
     await setCatalogo(`subcategorias_${catId}`, data)
   } catch {
-    const cached = await getCatalogo<Subcategoria[]>(`subcategorias_${catId}`)
-    if (cached) { subcategorias.value = cached } else { ui.showToast('Error al cargar subcategorías', 'error') }
+    // Filtrar desde catálogo completo de subcategorías
+    const allSubs = await getCatalogo<Subcategoria[]>('all_subcategorias')
+    if (allSubs) {
+      subcategorias.value = allSubs.filter(s => String(s.categoria_id) === String(catId))
+    } else {
+      const cached = await getCatalogo<Subcategoria[]>(`subcategorias_${catId}`)
+      if (cached) subcategorias.value = cached
+      else ui.showToast('Sin datos offline de subcategorías', 'error')
+    }
   }
 }
 
@@ -1100,6 +1119,7 @@ async function onSubcategoriaChange() {
   unidadValue.value = ''
   if (!subId) return
   try {
+    if (!isOnline.value) throw new Error('offline')
     const [prods, units] = await Promise.all([
       mercadosService.getProductos(subId),
       mercadosService.getUnidades(subId, tipoPrecio.value)
@@ -1109,11 +1129,29 @@ async function onSubcategoriaChange() {
     await setCatalogo(`productos_${subId}`, prods)
     await setCatalogo(`unidades_${subId}_${tipoPrecio.value}`, units)
   } catch {
-    const cachedP = await getCatalogo<Producto[]>(`productos_${subId}`)
-    const cachedU = await getCatalogo<Unidad[]>(`unidades_${subId}_${tipoPrecio.value}`)
-    if (cachedP) productos.value = cachedP
-    if (cachedU) unidades.value = cachedU
-    if (!cachedP && !cachedU) ui.showToast('Error al cargar productos', 'error')
+    // Filtrar desde catálogos completos
+    const allProds = await getCatalogo<Producto[]>('all_productos')
+    const allUnits = await getCatalogo<Array<Unidad & { tipo?: string }>>('all_unidades')
+    if (allProds) {
+      productos.value = allProds.filter(p => String(p.subcategoria_id) === String(subId))
+    }
+    if (allUnits) {
+      unidades.value = allUnits.filter(u =>
+        String(u.subcategoria_id) === String(subId) &&
+        (!u.tipo || u.tipo === tipoPrecio.value)
+      )
+      // Si no hay unidades filtradas por tipo, mostrar todas de esa subcategoría (deduplicadas)
+      if (unidades.value.length === 0) {
+        const seen = new Set<string>()
+        unidades.value = allUnits.filter(u => {
+          if (String(u.subcategoria_id) !== String(subId)) return false
+          if (seen.has(u.nombre)) return false
+          seen.add(u.nombre)
+          return true
+        })
+      }
+    }
+    if (!allProds && !allUnits) ui.showToast('Sin datos offline de productos', 'error')
   }
 }
 
@@ -1129,6 +1167,7 @@ watch(tipoPrecio, async () => {
   const subId = selectedSubcategoria.value
   if (!subId) return
   try {
+    if (!isOnline.value) throw new Error('offline')
     const units = await mercadosService.getUnidades(subId, tipoPrecio.value)
     unidades.value = units
     await setCatalogo(`unidades_${subId}_${tipoPrecio.value}`, units)
@@ -1137,14 +1176,27 @@ watch(tipoPrecio, async () => {
       unidadValue.value = unitNames.length === 1 ? unitNames[0] : ''
     }
   } catch {
-    const cached = await getCatalogo<Unidad[]>(`unidades_${subId}_${tipoPrecio.value}`)
-    if (cached) {
-      unidades.value = cached
-      const unitNames = cached.map(u => u.nombre)
+    const allUnits = await getCatalogo<Array<Unidad & { tipo?: string }>>('all_unidades')
+    if (allUnits) {
+      let filtered = allUnits.filter(u =>
+        String(u.subcategoria_id) === String(subId) &&
+        (!u.tipo || u.tipo === tipoPrecio.value)
+      )
+      if (filtered.length === 0) {
+        const seen = new Set<string>()
+        filtered = allUnits.filter(u => {
+          if (String(u.subcategoria_id) !== String(subId)) return false
+          if (seen.has(u.nombre)) return false
+          seen.add(u.nombre)
+          return true
+        })
+      }
+      unidades.value = filtered
+      const unitNames = filtered.map(u => u.nombre)
       if (!unitNames.includes(unidadValue.value)) {
         unidadValue.value = unitNames.length === 1 ? unitNames[0] : ''
       }
-    } else { ui.showToast('Error al cargar unidades', 'error') }
+    }
   }
 })
 

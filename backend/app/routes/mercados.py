@@ -140,6 +140,27 @@ def list_catalogo_municipios_todos():
         return result
 
 
+@router.get("/catalogos-offline")
+def get_catalogos_offline():
+    """Devuelve TODOS los catálogos de productos para cache offline en una sola petición."""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT id, nombre, descripcion FROM categorias ORDER BY nombre")
+        categorias = [dict(r) for r in cur.fetchall()]
+        cur.execute("SELECT id, categoria_id, nombre FROM subcategorias ORDER BY nombre")
+        subcategorias = [dict(r) for r in cur.fetchall()]
+        cur.execute("SELECT id, subcategoria_id, nombre FROM productos ORDER BY nombre")
+        productos = [dict(r) for r in cur.fetchall()]
+        cur.execute("SELECT id, subcategoria_id, nombre, tipo FROM unidades_subcategoria ORDER BY nombre")
+        unidades = [dict(r) for r in cur.fetchall()]
+        return {
+            "categorias": categorias,
+            "subcategorias": subcategorias,
+            "productos": productos,
+            "unidades": unidades,
+        }
+
+
 # ── Mercados del usuario (selección del catálogo) ──
 
 @router.get("/", response_model=List[MercadoOut])

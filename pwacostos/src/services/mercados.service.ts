@@ -34,6 +34,16 @@ export const mercadosService = {
     return data
   },
 
+  async getCatalogosOffline(): Promise<{
+    categorias: Categoria[]
+    subcategorias: Subcategoria[]
+    productos: Producto[]
+    unidades: Array<Unidad & { tipo?: string }>
+  }> {
+    const { data } = await api.get('/mercados/catalogos-offline')
+    return data
+  },
+
   // Catálogos de productos
   async getCategorias(): Promise<Categoria[]> {
     const { data } = await api.get<Categoria[]>('/mercados/categorias')
