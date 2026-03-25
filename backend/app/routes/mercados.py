@@ -408,6 +408,42 @@ def create_precio_individual(data: PrecioIndividualCreate, user_id: str = Depend
         if not prod:
             raise HTTPException(404, "Producto no encontrado")
 
+        # Deduplicación: si ya existe el mismo precio hoy, retornar el existente
+        cur.execute(
+            """SELECT dp.id AS detalle_id, rp.fecha, rp.created_at
+               FROM reportes_precios rp
+               JOIN detalle_precios dp ON dp.reporte_id = rp.id
+               WHERE rp.user_id = %s::uuid
+                 AND rp.mercado_id = %s
+                 AND rp.tipo_precio = %s
+                 AND dp.producto_id = %s
+                 AND dp.precio = %s
+                 AND dp.unidad = %s
+                 AND rp.fecha = CURRENT_DATE""",
+            (user_id, data.mercado_id, data.tipo_precio,
+             data.producto_id, data.precio, data.unidad),
+        )
+        existing = cur.fetchone()
+
+        if existing:
+            cur.execute(
+                "SELECT nombre, categoria_id FROM subcategorias WHERE id = %s",
+                (prod["subcategoria_id"],),
+            )
+            sub = cur.fetchone()
+            return PrecioHistorialItem(
+                id=existing["detalle_id"],
+                producto_id=data.producto_id,
+                producto_nombre=prod["nombre"],
+                subcategoria_nombre=sub["nombre"] if sub else "",
+                categoria_id=sub["categoria_id"] if sub else "",
+                precio=data.precio,
+                unidad=data.unidad,
+                tipo_precio=data.tipo_precio,
+                fecha=existing["fecha"].isoformat(),
+                created_at=existing["created_at"].isoformat(),
+            )
+
         # Crear reporte de 1 item
         cur.execute(
             """INSERT INTO reportes_precios (user_id, mercado_id, tipo_precio)
@@ -584,6 +620,40 @@ def proponer_mercado(data: MercadoPropuestoCreate, user_id: str = Depends(get_cu
 
     with get_db() as conn:
         cur = conn.cursor()
+
+        # Deduplicación: si ya existe propuesta igual del mismo usuario, retornar existente
+        cur.execute(
+            """SELECT id, status, created_at FROM mercados_propuestos
+               WHERE created_by = %s::uuid
+                 AND nombre_mercado = %s
+                 AND estado = %s
+                 AND municipio = %s
+                 AND ABS(latitud - %s) < 0.001
+                 AND ABS(longitud - %s) < 0.001
+               ORDER BY created_at DESC LIMIT 1""",
+            (user_id, data.nombre_mercado.strip(), data.estado,
+             data.municipio, data.latitud, data.longitud),
+        )
+        existing = cur.fetchone()
+        if existing:
+            return MercadoPropuestoOut(
+                id=existing["id"],
+                nombre_mercado=data.nombre_mercado.strip(),
+                tipo_mercado=data.tipo_mercado,
+                tipo_mercado_otro=data.tipo_mercado_otro,
+                estado=data.estado,
+                municipio=data.municipio,
+                localidad_colonia=data.localidad_colonia,
+                latitud=data.latitud,
+                longitud=data.longitud,
+                dias_operacion=data.dias_operacion,
+                horario=data.horario,
+                referencia=data.referencia,
+                observaciones=data.observaciones,
+                status=existing["status"],
+                created_at=existing["created_at"].isoformat(),
+            )
+
         # Obtener datos del perfil del usuario
         cur.execute(
             "SELECT tipo_capturista, cac_id, cac_nombre, territorio, ruta FROM users WHERE id = %s::uuid",

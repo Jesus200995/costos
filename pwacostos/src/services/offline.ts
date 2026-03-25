@@ -5,7 +5,13 @@ import api from './api'
 
 const isOnline = ref(navigator.onLine)
 
-function _handleOnline() { isOnline.value = true; syncAll() }
+let _onlineTimer: ReturnType<typeof setTimeout> | null = null
+function _handleOnline() {
+  isOnline.value = true
+  // Delay breve para evitar disparos múltiples por red inestable
+  if (_onlineTimer) clearTimeout(_onlineTimer)
+  _onlineTimer = setTimeout(() => { syncAll() }, 2000)
+}
 function _handleOffline() { isOnline.value = false }
 
 // Register listeners immediately at module load
@@ -140,6 +146,7 @@ export async function syncAll(): Promise<{ synced: number; failed: number }> {
   try {
     const items = await getAllPending()
     for (const item of items) {
+      if (!navigator.onLine) break          // red se fue, dejar de intentar
       try {
         if (item.type === 'precio') {
           await api.post('/mercados/precio', item.payload)
@@ -148,8 +155,15 @@ export async function syncAll(): Promise<{ synced: number; failed: number }> {
         }
         await removePending(item.id!)
         synced++
-      } catch {
-        failed++
+      } catch (err: any) {
+        // Si el server respondió 2xx o 409 (duplicado), el registro ya existe → eliminar de la cola
+        const status = err?.response?.status
+        if (status && status >= 200 && status < 300) {
+          await removePending(item.id!)
+          synced++
+        } else {
+          failed++
+        }
       }
     }
   } catch { /* db error */ }
