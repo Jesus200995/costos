@@ -114,15 +114,20 @@ async function removePending(id: number): Promise<void> {
 // ─── Sincronización ─────────────────────────────────────────────
 
 const pendingCount = ref(0)
+const pendingItems = ref<Array<{ id: number; type: string; payload: any; createdAt: string }>>([])
 let _syncing = false
 
 export function usePendingCount() {
   refreshPendingCount()
-  return { pendingCount }
+  return { pendingCount, pendingItems }
 }
 
 export async function refreshPendingCount() {
-  try { pendingCount.value = await getPendingCount() } catch { /* ignore */ }
+  try {
+    const items = await getAllPending()
+    pendingCount.value = items.length
+    pendingItems.value = items.map(i => ({ id: i.id!, type: i.type, payload: i.payload, createdAt: i.createdAt }))
+  } catch { /* ignore */ }
 }
 
 export async function syncAll(): Promise<{ synced: number; failed: number }> {
