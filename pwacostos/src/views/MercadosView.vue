@@ -719,6 +719,11 @@ function captureGPS() {
       propForm.latitud = pos.coords.latitude
       propForm.longitud = pos.coords.longitude
       gpsStatus.value = 'success'
+      // Cerrar mapa si está abierto
+      if (showMapPicker.value) {
+        showMapPicker.value = false
+        destroyMap()
+      }
     },
     (err) => {
       gpsStatus.value = 'error'
