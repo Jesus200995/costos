@@ -48,6 +48,8 @@
   --shadow-glow: 0 0 20px var(--primary-glow);
 
   --navbar-height: 60px;
+  --conn-bar-height: 22px;
+  --header-height: calc(var(--navbar-height) + var(--conn-bar-height));
   --sidebar-width: 280px;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -712,7 +714,7 @@ input {
 }
 
 .main-content {
-  padding-top: calc(var(--navbar-height) + 8px);
+  padding-top: calc(var(--header-height) + 8px);
   padding-bottom: 32px;
   padding-left: 16px;
   padding-right: 16px;
@@ -1046,7 +1048,7 @@ input {
 
 .toast-container {
   position: fixed;
-  top: calc(var(--navbar-height) + 12px);
+  top: calc(var(--header-height) + 12px);
   left: 16px;
   right: 16px;
   z-index: 500;
@@ -1223,7 +1225,7 @@ input {
   }
 
   .main-content {
-    padding-top: calc(var(--navbar-height) + env(safe-area-inset-top) + 8px);
+    padding-top: calc(var(--header-height) + env(safe-area-inset-top) + 8px);
     padding-bottom: calc(32px + env(safe-area-inset-bottom));
   }
 
