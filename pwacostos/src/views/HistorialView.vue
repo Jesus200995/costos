@@ -218,15 +218,6 @@ onMounted(() => {
 
 <style scoped>
 /* ── Layout ── */
-.main-content {
-  padding-top: 60px;
-  height: 100vh;
-  height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  background: #fafafa;
-  overflow: hidden;
-}
 .historial-page {
   max-width: 640px;
   width: 100%;
@@ -234,8 +225,9 @@ onMounted(() => {
   padding: 1rem 1rem 0.5rem;
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
+  height: calc(100vh - 60px);
+  height: calc(100dvh - 60px);
+  overflow: hidden;
 }
 .historial-top {
   flex-shrink: 0;
