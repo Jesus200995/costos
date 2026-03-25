@@ -1,23 +1,18 @@
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import api from './api'
 
 // ─── Estado de conexión reactivo (singleton) ────────────────────
 
 const isOnline = ref(navigator.onLine)
-let _listenersRegistered = false
 
 function _handleOnline() { isOnline.value = true; syncAll() }
 function _handleOffline() { isOnline.value = false }
 
+// Register listeners immediately at module load
+window.addEventListener('online', _handleOnline)
+window.addEventListener('offline', _handleOffline)
+
 export function useOnlineStatus() {
-  onMounted(() => {
-    if (!_listenersRegistered) {
-      window.addEventListener('online', _handleOnline)
-      window.addEventListener('offline', _handleOffline)
-      _listenersRegistered = true
-    }
-    isOnline.value = navigator.onLine
-  })
   return { isOnline }
 }
 
