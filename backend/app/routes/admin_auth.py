@@ -1191,7 +1191,7 @@ def monitoreo_mercado_precios(
             cur.execute(
                 f"""SELECT dp.id, p.nombre AS producto, dp.precio, dp.unidad,
                            rp.tipo_precio, rp.fecha, rp.created_at,
-                           u.nombre || ' ' || u.apellido_paterno AS capturista
+                           u.name AS capturista
                       FROM detalle_precios dp
                       JOIN reportes_precios rp ON rp.id = dp.reporte_id
                       JOIN productos p ON p.id = dp.producto_id
