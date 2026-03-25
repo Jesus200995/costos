@@ -117,6 +117,29 @@ def list_catalogo_municipios(entidad: str = Query(...)):
         return [r["municipio"] for r in cur.fetchall()]
 
 
+@router.get("/catalogo/todos", response_model=List[CatalogoMercadoOut])
+def list_catalogo_todos():
+    """Devuelve TODO el catálogo de mercados para cache offline."""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, market_id, nombre, tipo, entidad, municipio, localidad, latitud, longitud, n_establecimientos, cve_ent, cve_mun FROM catalogo_mercados ORDER BY entidad, municipio, nombre"
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+
+@router.get("/catalogo/municipios-todos")
+def list_catalogo_municipios_todos():
+    """Devuelve todos los municipios agrupados por entidad para cache offline."""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT DISTINCT entidad, municipio FROM catalogo_mercados ORDER BY entidad, municipio")
+        result: dict = {}
+        for r in cur.fetchall():
+            result.setdefault(r["entidad"], []).append(r["municipio"])
+        return result
+
+
 # ── Mercados del usuario (selección del catálogo) ──
 
 @router.get("/", response_model=List[MercadoOut])

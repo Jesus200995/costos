@@ -708,8 +708,13 @@ async function onPropEntidadChange() {
       propMunicipios.value = data
       await setCatalogo(`municipios_${propForm.estado}`, data)
     } catch {
-      const cached = await getCatalogo<string[]>(`municipios_${propForm.estado}`)
-      if (cached) propMunicipios.value = cached
+      const munMap = await getCatalogo<Record<string, string[]>>('municipios_todos')
+      if (munMap && munMap[propForm.estado]) {
+        propMunicipios.value = munMap[propForm.estado]
+      } else {
+        const cached = await getCatalogo<string[]>(`municipios_${propForm.estado}`)
+        if (cached) propMunicipios.value = cached
+      }
     }
   }
 }
@@ -927,6 +932,22 @@ async function deleteMercado(id: number) {
 }
 
 // ── Catálogo búsqueda ──
+
+// Precarga completa del catálogo para uso offline
+async function preloadCatalogoOffline() {
+  try {
+    const [todos, munTodos] = await Promise.all([
+      mercadosService.getCatalogoTodos(),
+      mercadosService.getMunicipiosTodos()
+    ])
+    await setCatalogo('catalogo_todos', todos)
+    await setCatalogo('municipios_todos', munTodos)
+    // Extraer entidades del catálogo completo
+    const ents = [...new Set(todos.map(m => m.entidad))].sort()
+    await setCatalogo('entidades', ents)
+  } catch { /* offline — se usará cache existente */ }
+}
+
 async function loadEntidades() {
   try {
     const data = await mercadosService.getCatalogoEntidades()
@@ -947,8 +968,14 @@ async function onEntidadChange() {
       municipiosCat.value = data
       await setCatalogo(`municipios_${filtroEntidad.value}`, data)
     } catch {
-      const cached = await getCatalogo<string[]>(`municipios_${filtroEntidad.value}`)
-      if (cached) municipiosCat.value = cached
+      // Intentar desde municipios_todos
+      const munMap = await getCatalogo<Record<string, string[]>>('municipios_todos')
+      if (munMap && munMap[filtroEntidad.value]) {
+        municipiosCat.value = munMap[filtroEntidad.value]
+      } else {
+        const cached = await getCatalogo<string[]>(`municipios_${filtroEntidad.value}`)
+        if (cached) municipiosCat.value = cached
+      }
     }
   }
   searchCatalogo()
@@ -960,12 +987,11 @@ function onNombreInput() {
 }
 
 async function searchCatalogo() {
-  const params: Record<string, string> = {}
-  if (filtroEntidad.value) params.entidad = filtroEntidad.value
-  if (filtroMunicipio.value) params.municipio = filtroMunicipio.value
-  if (filtroNombre.value.trim()) params.nombre = filtroNombre.value.trim()
+  const entidad = filtroEntidad.value
+  const municipio = filtroMunicipio.value
+  const nombre = filtroNombre.value.trim()
 
-  if (!params.entidad && !params.municipio && !params.nombre) {
+  if (!entidad && !municipio && !nombre) {
     catalogoResults.value = []
     hasSearched.value = false
     return
@@ -974,14 +1000,25 @@ async function searchCatalogo() {
   searchingCatalogo.value = true
   hasSearched.value = true
   try {
-    const data = await mercadosService.searchCatalogo(params)
-    catalogoResults.value = data
-    const cacheKey = `catalogo_${params.entidad || ''}_${params.municipio || ''}_${params.nombre || ''}`
-    await setCatalogo(cacheKey, data)
+    if (!isOnline.value) throw new Error('offline')
+    const params: Record<string, string> = {}
+    if (entidad) params.entidad = entidad
+    if (municipio) params.municipio = municipio
+    if (nombre) params.nombre = nombre
+    catalogoResults.value = await mercadosService.searchCatalogo(params)
   } catch {
-    const cacheKey = `catalogo_${params.entidad || ''}_${params.municipio || ''}_${params.nombre || ''}`
-    const cached = await getCatalogo<CatalogoMercado[]>(cacheKey)
-    if (cached) { catalogoResults.value = cached } else { ui.showToast('Error al buscar mercados', 'error') }
+    // Filtrar localmente desde el catálogo completo cacheado
+    const todos = await getCatalogo<CatalogoMercado[]>('catalogo_todos')
+    if (todos) {
+      const upper = nombre.toUpperCase()
+      catalogoResults.value = todos.filter(m =>
+        (!entidad || m.entidad === entidad) &&
+        (!municipio || m.municipio === municipio) &&
+        (!nombre || m.nombre.toUpperCase().includes(upper))
+      )
+    } else {
+      ui.showToast('Sin datos offline disponibles', 'error')
+    }
   } finally {
     searchingCatalogo.value = false
   }
@@ -1148,6 +1185,7 @@ onMounted(() => {
   loadEntidades()
   loadPropuestos()
   loadRecientes()
+  preloadCatalogoOffline()
 })
 
 onBeforeUnmount(() => {

@@ -24,6 +24,16 @@ export const mercadosService = {
     return data
   },
 
+  async getCatalogoTodos(): Promise<CatalogoMercado[]> {
+    const { data } = await api.get<CatalogoMercado[]>('/mercados/catalogo/todos')
+    return data
+  },
+
+  async getMunicipiosTodos(): Promise<Record<string, string[]>> {
+    const { data } = await api.get<Record<string, string[]>>('/mercados/catalogo/municipios-todos')
+    return data
+  },
+
   // Catálogos de productos
   async getCategorias(): Promise<Categoria[]> {
     const { data } = await api.get<Categoria[]>('/mercados/categorias')
