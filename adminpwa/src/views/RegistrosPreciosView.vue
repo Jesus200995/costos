@@ -102,7 +102,7 @@
             <input
               v-model="searchQuery"
               class="search-box__input"
-              placeholder="Buscar usuario, producto, mercado…"
+              placeholder="Buscar usuario, correo, producto, mercado…"
             />
             <button v-if="searchQuery" class="search-box__clear" @click="searchQuery = ''">
               <X :size="12" />
@@ -118,21 +118,64 @@
                 <option value="PRODUCTOR">Productor</option>
               </select>
             </div>
+          </div>
+        </div>
+
+        <!-- Filtros de catálogos -->
+        <div class="toolbar-row toolbar-row--filters">
+          <div class="filter-chips">
+            <div class="filter-chip">
+              <MapPin :size="14" />
+              <select v-model="filterEstado" @change="onEstadoChange">
+                <option value="">Estado</option>
+                <option v-for="e in catEstados" :key="e" :value="e">{{ e }}</option>
+              </select>
+            </div>
+            <div class="filter-chip">
+              <Building :size="14" />
+              <select v-model="filterMunicipio" :disabled="!filterEstado">
+                <option value="">Municipio</option>
+                <option v-for="m in municipiosFiltrados" :key="m" :value="m">{{ m }}</option>
+              </select>
+            </div>
             <div class="filter-chip">
               <MapPin :size="14" />
               <select v-model="filterMercado">
                 <option value="">Mercado</option>
-                <option v-for="m in mercadosUnicos" :key="m" :value="m">{{ m }}</option>
+                <option v-for="m in mercadosFiltrados" :key="m.id" :value="m.id">{{ m.nombre }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="toolbar-row toolbar-row--filters">
+          <div class="filter-chips">
+            <div class="filter-chip">
+              <FolderOpen :size="14" />
+              <select v-model="filterCategoria" @change="onCategoriaChange">
+                <option value="">Categoría</option>
+                <option v-for="c in catCategorias" :key="c.id" :value="c.id">{{ c.nombre }}</option>
+              </select>
+            </div>
+            <div class="filter-chip">
+              <Layers :size="14" />
+              <select v-model="filterSubcategoria" :disabled="!filterCategoria" @change="onSubcategoriaChange">
+                <option value="">Subcategoría</option>
+                <option v-for="s in subcategoriasFiltradas" :key="s.id" :value="s.id">{{ s.nombre }}</option>
               </select>
             </div>
             <div class="filter-chip">
               <ShoppingCart :size="14" />
-              <select v-model="filterProducto">
+              <select v-model="filterProducto" :disabled="!filterSubcategoria">
                 <option value="">Producto</option>
-                <option v-for="p in productosUnicos" :key="p" :value="p">{{ p }}</option>
+                <option v-for="p in productosFiltrados" :key="p.id" :value="p.id">{{ p.nombre }}</option>
               </select>
             </div>
           </div>
+
+          <button v-if="hasActiveFilters" class="btn-clear-filters" @click="clearAllFilters">
+            <X :size="14" /> Limpiar filtros
+          </button>
         </div>
 
         <div class="toolbar-row toolbar-row--dates">
@@ -258,7 +301,7 @@ import {
   LayoutDashboard, Users, LogOut, Search, X,
   ChevronDown, ChevronLeft, ChevronRight, Layers,
   ListFilter, MapPin, ShoppingCart, Eye,
-  ClipboardList, Map, Store
+  ClipboardList, Map, Store, FolderOpen, Building
 } from 'lucide-vue-next'
 
 interface RegistroPrecio {
@@ -288,14 +331,26 @@ const registros = ref<RegistroPrecio[]>([])
 const loading = ref(true)
 const searchQuery = ref('')
 const filterTipoPrecio = ref('')
-const filterMercado = ref('')
-const filterProducto = ref('')
+const filterEstado = ref('')
+const filterMunicipio = ref('')
+const filterMercado = ref<number | string>('')
+const filterCategoria = ref('')
+const filterSubcategoria = ref('')
+const filterProducto = ref<number | string>('')
 const fechaDesde = ref('')
 const fechaHasta = ref('')
 const sortField = ref<string>('fecha')
 const sortDir = ref<'asc' | 'desc'>('desc')
 const currentPage = ref(1)
 const perPage = 20
+
+// Catálogos cargados desde la BD
+const catEstados = ref<string[]>([])
+const catMunicipiosMap = ref<Record<string, string[]>>({})
+const catCategorias = ref<{id: string; nombre: string}[]>([])
+const catSubcategorias = ref<{id: string; categoria_id: string; nombre: string}[]>([])
+const catProductos = ref<{id: number; subcategoria_id: string; nombre: string}[]>([])
+const catMercados = ref<{id: number; nombre: string; entidad: string; municipio: string}[]>([])
 
 const userInitials = computed(() => {
   if (!auth.user) return '?'
@@ -308,11 +363,34 @@ const uniqueUsers = computed(() => new Set(registros.value.map(r => r.user_id)).
 const uniqueProducts = computed(() => new Set(registros.value.map(r => r.producto_nombre)).size)
 const uniqueMercados = computed(() => new Set(registros.value.map(r => r.mercado_nombre)).size)
 
-const mercadosUnicos = computed(() =>
-  Array.from(new Set(registros.value.map(r => r.mercado_nombre))).sort()
+// Filtros dependientes
+const municipiosFiltrados = computed(() =>
+  filterEstado.value ? (catMunicipiosMap.value[filterEstado.value] || []) : []
 )
-const productosUnicos = computed(() =>
-  Array.from(new Set(registros.value.map(r => r.producto_nombre))).sort()
+
+const mercadosFiltrados = computed(() => {
+  let list = catMercados.value
+  if (filterEstado.value) list = list.filter(m => m.entidad === filterEstado.value)
+  if (filterMunicipio.value) list = list.filter(m => m.municipio === filterMunicipio.value)
+  return list
+})
+
+const subcategoriasFiltradas = computed(() =>
+  filterCategoria.value
+    ? catSubcategorias.value.filter(s => s.categoria_id === filterCategoria.value)
+    : []
+)
+
+const productosFiltrados = computed(() =>
+  filterSubcategoria.value
+    ? catProductos.value.filter(p => p.subcategoria_id === filterSubcategoria.value)
+    : []
+)
+
+const hasActiveFilters = computed(() =>
+  !!(filterTipoPrecio.value || filterEstado.value || filterMunicipio.value ||
+     filterMercado.value || filterCategoria.value || filterSubcategoria.value ||
+     filterProducto.value || fechaDesde.value || fechaHasta.value)
 )
 
 const filteredRegistros = computed(() => {
@@ -327,8 +405,15 @@ const filteredRegistros = computed(() => {
     )
   }
   if (filterTipoPrecio.value) result = result.filter(r => r.tipo_precio === filterTipoPrecio.value)
-  if (filterMercado.value) result = result.filter(r => r.mercado_nombre === filterMercado.value)
-  if (filterProducto.value) result = result.filter(r => r.producto_nombre === filterProducto.value)
+  if (filterEstado.value) result = result.filter(r => r.mercado_entidad === filterEstado.value)
+  if (filterMunicipio.value) result = result.filter(r => r.mercado_municipio === filterMunicipio.value)
+  if (filterMercado.value) result = result.filter(r => r.mercado_id === Number(filterMercado.value))
+  if (filterCategoria.value) result = result.filter(r => r.categoria_id === filterCategoria.value)
+  if (filterSubcategoria.value) {
+    const prodIds = new Set(catProductos.value.filter(p => p.subcategoria_id === filterSubcategoria.value).map(p => p.id))
+    result = result.filter(r => prodIds.has(r.producto_id))
+  }
+  if (filterProducto.value) result = result.filter(r => r.producto_id === Number(filterProducto.value))
 
   result.sort((a: any, b: any) => {
     const aVal = a[sortField.value] ?? ''
@@ -359,7 +444,35 @@ const visiblePages = computed(() => {
   return pages
 })
 
-watch([searchQuery, filterTipoPrecio, filterMercado, filterProducto], () => { currentPage.value = 1 })
+watch([searchQuery, filterTipoPrecio, filterEstado, filterMunicipio, filterMercado,
+       filterCategoria, filterSubcategoria, filterProducto], () => { currentPage.value = 1 })
+
+function onEstadoChange() {
+  filterMunicipio.value = ''
+  filterMercado.value = ''
+}
+
+function onCategoriaChange() {
+  filterSubcategoria.value = ''
+  filterProducto.value = ''
+}
+
+function onSubcategoriaChange() {
+  filterProducto.value = ''
+}
+
+function clearAllFilters() {
+  filterTipoPrecio.value = ''
+  filterEstado.value = ''
+  filterMunicipio.value = ''
+  filterMercado.value = ''
+  filterCategoria.value = ''
+  filterSubcategoria.value = ''
+  filterProducto.value = ''
+  fechaDesde.value = ''
+  fechaHasta.value = ''
+  fetchData()
+}
 
 function sortByField(field: string) {
   if (sortField.value === field) {
@@ -404,12 +517,29 @@ async function fetchData() {
   }
 }
 
+async function fetchFiltros() {
+  try {
+    const { data } = await api.get('/admin/registros-precios/filtros', { params: {} })
+    catEstados.value = data.estados || []
+    catMunicipiosMap.value = data.municipios_map || {}
+    catCategorias.value = data.categorias || []
+    catSubcategorias.value = data.subcategorias || []
+    catProductos.value = data.productos || []
+    catMercados.value = data.mercados || []
+  } catch (e: any) {
+    console.error('Error cargando filtros:', e)
+  }
+}
+
 function handleLogout() {
   auth.logout()
   router.push('/login')
 }
 
-onMounted(() => { fetchData() })
+onMounted(() => {
+  fetchFiltros()
+  fetchData()
+})
 </script>
 
 <style scoped>
@@ -471,6 +601,9 @@ onMounted(() => { fetchData() })
 .filter-chip { display: flex; align-items: center; gap: 0.35rem; padding: 0 0.1rem 0 0.7rem; border: 1.5px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
 .filter-chip select { border: none; background: transparent; font-size: 0.84rem; padding: 0.6rem 0.5rem; min-width: 120px; cursor: pointer; }
 .filter-chip select:focus { outline: none; }
+
+.btn-clear-filters { display: flex; align-items: center; gap: 0.3rem; padding: 0.5rem 0.85rem; border-radius: 8px; font-size: 0.82rem; font-weight: 500; border: none; cursor: pointer; background: #fef2f2; color: #dc2626; transition: background 0.15s; white-space: nowrap; margin-left: auto; }
+.btn-clear-filters:hover { background: #fee2e2; }
 
 .toolbar-row--dates { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
 .date-label { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: #475569; font-weight: 500; }

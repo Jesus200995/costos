@@ -586,15 +586,17 @@ onMounted(loadPropuestas)
 .btn-logout:hover { background: rgba(239,68,68,.18); color: #f87171; }
 
 /* Main */
-.main-content { flex: 1; margin-left: 260px; padding: 0; }
+.main-content { flex: 1; margin-left: 260px; padding: 0.75rem 2rem 2rem; background: #f8fafc; min-height: 100vh; }
 
 /* Top bar */
 .top-bar {
-  padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between;
-  background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%); color: #fff;
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(135deg,#4f46e5,#6366f1); border-radius: 14px;
+  padding: 1.15rem 1.5rem; margin-bottom: 1.25rem;
+  box-shadow: 0 4px 20px rgba(79,70,229,0.18); color: #fff;
 }
-.top-bar__title { font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 8px; margin: 0; }
-.top-bar__desc { font-size: .85rem; opacity: .85; margin: .25rem 0 0; }
+.top-bar__title { font-size: 1.35rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; margin: 0; }
+.top-bar__desc { font-size: .85rem; color: rgba(255,255,255,0.75); margin: .15rem 0 0; }
 
 /* Toolbar */
 .toolbar-card {
@@ -803,7 +805,6 @@ onMounted(loadPropuestas)
   .user-info { justify-content: center; }
   .btn-logout { display: none; }
   .main-content { margin-left: 68px; }
-  .top-bar, .toolbar-card, .table-card { margin-left: 1rem; margin-right: 1rem; }
 }
 @media (max-width: 768px) {
   .hide-md { display: none; }
@@ -812,7 +813,6 @@ onMounted(loadPropuestas)
 @media (max-width: 640px) {
   .hide-sm { display: none; }
   .show-sm { display: block !important; }
-  .top-bar { padding: 1rem; }
-  .toolbar-card, .table-card { margin: .5rem; }
+  .main-content { padding: 0.75rem 1rem 1.5rem; }
 }
 </style>

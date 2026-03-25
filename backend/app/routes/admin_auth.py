@@ -766,9 +766,13 @@ def list_registros_precios(
     token: str,
     fecha_desde: Optional[str] = Query(None),
     fecha_hasta: Optional[str] = Query(None),
-    producto: Optional[str] = Query(None),
-    mercado: Optional[str] = Query(None),
+    producto_id: Optional[int] = Query(None),
+    subcategoria_id: Optional[str] = Query(None),
+    categoria_id: Optional[str] = Query(None),
+    mercado_id: Optional[int] = Query(None),
     tipo_precio: Optional[str] = Query(None),
+    estado: Optional[str] = Query(None),
+    municipio: Optional[str] = Query(None),
     usuario: Optional[str] = Query(None),
 ):
     require_admin(token)
@@ -799,15 +803,27 @@ def list_registros_precios(
         if fecha_hasta:
             query += " AND r.fecha <= %s"
             params.append(fecha_hasta)
-        if producto:
-            query += " AND LOWER(p.nombre) LIKE LOWER(%s)"
-            params.append(f"%{producto}%")
-        if mercado:
-            query += " AND LOWER(cm.nombre) LIKE LOWER(%s)"
-            params.append(f"%{mercado}%")
+        if producto_id:
+            query += " AND d.producto_id = %s"
+            params.append(producto_id)
+        if subcategoria_id:
+            query += " AND p.subcategoria_id = %s"
+            params.append(subcategoria_id)
+        if categoria_id:
+            query += " AND s.categoria_id = %s"
+            params.append(categoria_id)
+        if mercado_id:
+            query += " AND cm.id = %s"
+            params.append(mercado_id)
         if tipo_precio:
             query += " AND r.tipo_precio = %s"
             params.append(tipo_precio)
+        if estado:
+            query += " AND cm.entidad = %s"
+            params.append(estado)
+        if municipio:
+            query += " AND cm.municipio = %s"
+            params.append(municipio)
         if usuario:
             query += " AND (LOWER(u.name) LIKE LOWER(%s) OR LOWER(u.email) LIKE LOWER(%s))"
             params.append(f"%{usuario}%")
@@ -839,3 +855,47 @@ def list_registros_precios(
         }
         for r in rows
     ]
+
+
+@router.get("/registros-precios/filtros")
+def get_filtros_registros(token: str):
+    """Devuelve catálogos completos para filtros de registros de precios"""
+    require_admin(token)
+
+    with get_db() as conn:
+        cur = conn.cursor()
+
+        # Estados (entidades del catálogo de mercados)
+        cur.execute("SELECT DISTINCT entidad FROM catalogo_mercados ORDER BY entidad")
+        estados = [r["entidad"] for r in cur.fetchall()]
+
+        # Municipios agrupados por entidad
+        cur.execute("SELECT DISTINCT entidad, municipio FROM catalogo_mercados ORDER BY entidad, municipio")
+        municipios_map: dict = {}
+        for r in cur.fetchall():
+            municipios_map.setdefault(r["entidad"], []).append(r["municipio"])
+
+        # Categorías
+        cur.execute("SELECT id, nombre FROM categorias ORDER BY nombre")
+        categorias = [dict(r) for r in cur.fetchall()]
+
+        # Subcategorías con su categoria_id
+        cur.execute("SELECT id, categoria_id, nombre FROM subcategorias ORDER BY nombre")
+        subcategorias = [dict(r) for r in cur.fetchall()]
+
+        # Productos con su subcategoria_id
+        cur.execute("SELECT id, subcategoria_id, nombre FROM productos ORDER BY nombre")
+        productos = [dict(r) for r in cur.fetchall()]
+
+        # Mercados (del catálogo)
+        cur.execute("SELECT id, nombre, entidad, municipio FROM catalogo_mercados ORDER BY nombre")
+        mercados = [dict(r) for r in cur.fetchall()]
+
+    return {
+        "estados": estados,
+        "municipios_map": municipios_map,
+        "categorias": categorias,
+        "subcategorias": subcategorias,
+        "productos": productos,
+        "mercados": mercados,
+    }
