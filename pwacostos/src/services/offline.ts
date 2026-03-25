@@ -1,0 +1,167 @@
+import { ref, onMounted } from 'vue'
+import api from './api'
+
+// ─── Estado de conexión reactivo (singleton) ────────────────────
+
+const isOnline = ref(navigator.onLine)
+let _listenersRegistered = false
+
+function _handleOnline() { isOnline.value = true; syncAll() }
+function _handleOffline() { isOnline.value = false }
+
+export function useOnlineStatus() {
+  onMounted(() => {
+    if (!_listenersRegistered) {
+      window.addEventListener('online', _handleOnline)
+      window.addEventListener('offline', _handleOffline)
+      _listenersRegistered = true
+    }
+    isOnline.value = navigator.onLine
+  })
+  return { isOnline }
+}
+
+// ─── IndexedDB helpers ──────────────────────────────────────────
+
+const DB_NAME = 'costos_offline'
+const DB_VERSION = 1
+
+function openDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION)
+    req.onupgradeneeded = () => {
+      const db = req.result
+      if (!db.objectStoreNames.contains('catalogos'))
+        db.createObjectStore('catalogos')          // key-value store
+      if (!db.objectStoreNames.contains('pendingQueue'))
+        db.createObjectStore('pendingQueue', { keyPath: 'id', autoIncrement: true })
+    }
+    req.onsuccess = () => resolve(req.result)
+    req.onerror = () => reject(req.error)
+  })
+}
+
+// ─── Catálogos cache ────────────────────────────────────────────
+
+export async function setCatalogo(key: string, data: any): Promise<void> {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('catalogos', 'readwrite')
+    tx.objectStore('catalogos').put(data, key)
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  })
+}
+
+export async function getCatalogo<T = any>(key: string): Promise<T | null> {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('catalogos', 'readonly')
+    const req = tx.objectStore('catalogos').get(key)
+    req.onsuccess = () => resolve(req.result ?? null)
+    req.onerror = () => reject(req.error)
+  })
+}
+
+// ─── Cola de operaciones pendientes ─────────────────────────────
+
+interface PendingItem {
+  id?: number
+  type: 'precio' | 'propuesta'
+  payload: any
+  createdAt: string
+}
+
+export async function addPending(type: PendingItem['type'], payload: any): Promise<void> {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('pendingQueue', 'readwrite')
+    tx.objectStore('pendingQueue').add({
+      type,
+      payload,
+      createdAt: new Date().toISOString()
+    })
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  })
+}
+
+export async function getPendingCount(): Promise<number> {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('pendingQueue', 'readonly')
+    const req = tx.objectStore('pendingQueue').count()
+    req.onsuccess = () => resolve(req.result)
+    req.onerror = () => reject(req.error)
+  })
+}
+
+async function getAllPending(): Promise<PendingItem[]> {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('pendingQueue', 'readonly')
+    const req = tx.objectStore('pendingQueue').getAll()
+    req.onsuccess = () => resolve(req.result)
+    req.onerror = () => reject(req.error)
+  })
+}
+
+async function removePending(id: number): Promise<void> {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('pendingQueue', 'readwrite')
+    tx.objectStore('pendingQueue').delete(id)
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  })
+}
+
+// ─── Sincronización ─────────────────────────────────────────────
+
+const pendingCount = ref(0)
+let _syncing = false
+
+export function usePendingCount() {
+  refreshPendingCount()
+  return { pendingCount }
+}
+
+export async function refreshPendingCount() {
+  try { pendingCount.value = await getPendingCount() } catch { /* ignore */ }
+}
+
+export async function syncAll(): Promise<{ synced: number; failed: number }> {
+  if (_syncing || !navigator.onLine) return { synced: 0, failed: 0 }
+  _syncing = true
+
+  let synced = 0
+  let failed = 0
+
+  try {
+    const items = await getAllPending()
+    for (const item of items) {
+      try {
+        if (item.type === 'precio') {
+          await api.post('/mercados/precio', item.payload)
+        } else if (item.type === 'propuesta') {
+          await api.post('/mercados/proponer', item.payload)
+        }
+        await removePending(item.id!)
+        synced++
+      } catch {
+        failed++
+      }
+    }
+  } catch { /* db error */ }
+
+  _syncing = false
+  await refreshPendingCount()
+  return { synced, failed }
+}
+
+// Intento de sincronización periódica cada 30s si hay pendientes
+setInterval(async () => {
+  if (navigator.onLine && (await getPendingCount()) > 0) {
+    syncAll()
+  }
+}, 30000)

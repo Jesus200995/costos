@@ -535,6 +535,7 @@
 import { ref, computed, reactive, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { mercadosService } from '@/services/mercados.service'
+import { setCatalogo, getCatalogo, addPending, useOnlineStatus, refreshPendingCount } from '@/services/offline'
 import type { Mercado, CatalogoMercado, Categoria, Subcategoria, Producto, Unidad, PrecioHistorialItem, MercadoPropuesto } from '@/types'
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
@@ -547,6 +548,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 const ui = useUiStore()
+const { isOnline } = useOnlineStatus()
 
 const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
@@ -702,8 +704,13 @@ async function onPropEntidadChange() {
   propMunicipios.value = []
   if (propForm.estado) {
     try {
-      propMunicipios.value = await mercadosService.getCatalogoMunicipios(propForm.estado)
-    } catch { /* silent */ }
+      const data = await mercadosService.getCatalogoMunicipios(propForm.estado)
+      propMunicipios.value = data
+      await setCatalogo(`municipios_${propForm.estado}`, data)
+    } catch {
+      const cached = await getCatalogo<string[]>(`municipios_${propForm.estado}`)
+      if (cached) propMunicipios.value = cached
+    }
   }
 }
 
@@ -837,29 +844,34 @@ function resetPropForm() {
 async function submitPropuesta() {
   if (!canSubmitPropuesta.value) return
   submittingProp.value = true
+
+  const payload = {
+    nombre_mercado: propForm.nombre_mercado.trim(),
+    tipo_mercado: propForm.tipo_mercado,
+    tipo_mercado_otro: propForm.tipo_mercado === 'OTRO' ? propForm.tipo_mercado_otro : undefined,
+    estado: propForm.estado,
+    municipio: propForm.municipio,
+    localidad_colonia: propForm.localidad_colonia || undefined,
+    latitud: propForm.latitud,
+    longitud: propForm.longitud,
+    dias_operacion: propForm.dias_operacion,
+    horario: horarioDesde.value && horarioHasta.value ? `${horarioDesde.value} - ${horarioHasta.value}` : undefined,
+    referencia: propForm.referencia || undefined,
+    observaciones: propForm.observaciones || undefined,
+  }
+
   try {
-    const created = await mercadosService.proponerMercado({
-      nombre_mercado: propForm.nombre_mercado.trim(),
-      tipo_mercado: propForm.tipo_mercado,
-      tipo_mercado_otro: propForm.tipo_mercado === 'OTRO' ? propForm.tipo_mercado_otro : undefined,
-      estado: propForm.estado,
-      municipio: propForm.municipio,
-      localidad_colonia: propForm.localidad_colonia || undefined,
-      latitud: propForm.latitud,
-      longitud: propForm.longitud,
-      dias_operacion: propForm.dias_operacion,
-      horario: horarioDesde.value && horarioHasta.value ? `${horarioDesde.value} - ${horarioHasta.value}` : undefined,
-      referencia: propForm.referencia || undefined,
-      observaciones: propForm.observaciones || undefined,
-    })
+    if (!isOnline.value) throw new Error('offline')
+    const created = await mercadosService.proponerMercado(payload)
     propuestos.value.unshift(created)
     ui.showToast('Propuesta enviada correctamente', 'success')
+  } catch {
+    await addPending('propuesta', payload)
+    await refreshPendingCount()
+    ui.showToast('Propuesta guardada offline (se subirá al reconectar)', 'info')
+  } finally {
     showProponer.value = false
     resetPropForm()
-  } catch (e: any) {
-    const msg = e.response?.data?.detail || 'Error al enviar propuesta'
-    ui.showToast(msg, 'error')
-  } finally {
     submittingProp.value = false
   }
 }
@@ -884,9 +896,12 @@ const canSavePrecio = computed(() =>
 async function loadMercados() {
   loadingMercados.value = true
   try {
-    mercados.value = await mercadosService.getMercados()
+    const data = await mercadosService.getMercados()
+    mercados.value = data
+    await setCatalogo('mercados', data)
   } catch {
-    ui.showToast('Error al cargar mercados', 'error')
+    const cached = await getCatalogo<Mercado[]>('mercados')
+    if (cached) { mercados.value = cached } else { ui.showToast('Error al cargar mercados', 'error') }
   } finally {
     loadingMercados.value = false
   }
@@ -914,8 +929,13 @@ async function deleteMercado(id: number) {
 // ── Catálogo búsqueda ──
 async function loadEntidades() {
   try {
-    entidades.value = await mercadosService.getCatalogoEntidades()
-  } catch { /* silent */ }
+    const data = await mercadosService.getCatalogoEntidades()
+    entidades.value = data
+    await setCatalogo('entidades', data)
+  } catch {
+    const cached = await getCatalogo<string[]>('entidades')
+    if (cached) entidades.value = cached
+  }
 }
 
 async function onEntidadChange() {
@@ -923,8 +943,13 @@ async function onEntidadChange() {
   municipiosCat.value = []
   if (filtroEntidad.value) {
     try {
-      municipiosCat.value = await mercadosService.getCatalogoMunicipios(filtroEntidad.value)
-    } catch { /* silent */ }
+      const data = await mercadosService.getCatalogoMunicipios(filtroEntidad.value)
+      municipiosCat.value = data
+      await setCatalogo(`municipios_${filtroEntidad.value}`, data)
+    } catch {
+      const cached = await getCatalogo<string[]>(`municipios_${filtroEntidad.value}`)
+      if (cached) municipiosCat.value = cached
+    }
   }
   searchCatalogo()
 }
@@ -949,9 +974,14 @@ async function searchCatalogo() {
   searchingCatalogo.value = true
   hasSearched.value = true
   try {
-    catalogoResults.value = await mercadosService.searchCatalogo(params)
+    const data = await mercadosService.searchCatalogo(params)
+    catalogoResults.value = data
+    const cacheKey = `catalogo_${params.entidad || ''}_${params.municipio || ''}_${params.nombre || ''}`
+    await setCatalogo(cacheKey, data)
   } catch {
-    ui.showToast('Error al buscar mercados', 'error')
+    const cacheKey = `catalogo_${params.entidad || ''}_${params.municipio || ''}_${params.nombre || ''}`
+    const cached = await getCatalogo<CatalogoMercado[]>(cacheKey)
+    if (cached) { catalogoResults.value = cached } else { ui.showToast('Error al buscar mercados', 'error') }
   } finally {
     searchingCatalogo.value = false
   }
@@ -985,9 +1015,16 @@ async function selectMercado(m: Mercado) {
 
   try {
     if (categorias.value.length === 0) {
-      categorias.value = await mercadosService.getCategorias()
+      try {
+        const cats = await mercadosService.getCategorias()
+        categorias.value = cats
+        await setCatalogo('categorias', cats)
+      } catch {
+        const cached = await getCatalogo<Categoria[]>('categorias')
+        if (cached) categorias.value = cached
+      }
     }
-    historial.value = await mercadosService.getPreciosHistorial(m.id)
+    try { historial.value = await mercadosService.getPreciosHistorial(m.id) } catch { /* offline ok */ }
   } catch {
     ui.showToast('Error al cargar datos', 'error')
   }
@@ -1008,9 +1045,12 @@ async function onCategoriaChange(catId: string) {
   precioValue.value = null
   unidadValue.value = ''
   try {
-    subcategorias.value = await mercadosService.getSubcategorias(catId)
+    const data = await mercadosService.getSubcategorias(catId)
+    subcategorias.value = data
+    await setCatalogo(`subcategorias_${catId}`, data)
   } catch {
-    ui.showToast('Error al cargar subcategorías', 'error')
+    const cached = await getCatalogo<Subcategoria[]>(`subcategorias_${catId}`)
+    if (cached) { subcategorias.value = cached } else { ui.showToast('Error al cargar subcategorías', 'error') }
   }
 }
 
@@ -1029,8 +1069,14 @@ async function onSubcategoriaChange() {
     ])
     productos.value = prods
     unidades.value = units
+    await setCatalogo(`productos_${subId}`, prods)
+    await setCatalogo(`unidades_${subId}_${tipoPrecio.value}`, units)
   } catch {
-    ui.showToast('Error al cargar productos', 'error')
+    const cachedP = await getCatalogo<Producto[]>(`productos_${subId}`)
+    const cachedU = await getCatalogo<Unidad[]>(`unidades_${subId}_${tipoPrecio.value}`)
+    if (cachedP) productos.value = cachedP
+    if (cachedU) unidades.value = cachedU
+    if (!cachedP && !cachedU) ui.showToast('Error al cargar productos', 'error')
   }
 }
 
@@ -1046,13 +1092,22 @@ watch(tipoPrecio, async () => {
   const subId = selectedSubcategoria.value
   if (!subId) return
   try {
-    unidades.value = await mercadosService.getUnidades(subId, tipoPrecio.value)
-    const unitNames = unidades.value.map(u => u.nombre)
+    const units = await mercadosService.getUnidades(subId, tipoPrecio.value)
+    unidades.value = units
+    await setCatalogo(`unidades_${subId}_${tipoPrecio.value}`, units)
+    const unitNames = units.map(u => u.nombre)
     if (!unitNames.includes(unidadValue.value)) {
       unidadValue.value = unitNames.length === 1 ? unitNames[0] : ''
     }
   } catch {
-    ui.showToast('Error al cargar unidades', 'error')
+    const cached = await getCatalogo<Unidad[]>(`unidades_${subId}_${tipoPrecio.value}`)
+    if (cached) {
+      unidades.value = cached
+      const unitNames = cached.map(u => u.nombre)
+      if (!unitNames.includes(unidadValue.value)) {
+        unidadValue.value = unitNames.length === 1 ? unitNames[0] : ''
+      }
+    } else { ui.showToast('Error al cargar unidades', 'error') }
   }
 })
 
@@ -1060,26 +1115,30 @@ watch(tipoPrecio, async () => {
 async function savePrecio() {
   if (!canSavePrecio.value || !selectedMercado.value || !selectedProductoId.value) return
 
+  const payload = {
+    mercado_id: selectedMercado.value.id,
+    tipo_precio: tipoPrecio.value,
+    producto_id: selectedProductoId.value as number,
+    precio: Math.round(precioValue.value! * 100) / 100,
+    unidad: unidadValue.value
+  }
+
   saving.value = true
   try {
-    const saved = await mercadosService.savePrecioIndividual({
-      mercado_id: selectedMercado.value.id,
-      tipo_precio: tipoPrecio.value,
-      producto_id: selectedProductoId.value as number,
-      precio: Math.round(precioValue.value! * 100) / 100,
-      unidad: unidadValue.value
-    })
+    if (!isOnline.value) throw new Error('offline')
+    const saved = await mercadosService.savePrecioIndividual(payload)
     historial.value.unshift(saved)
     ui.showToast(`${saved.producto_nombre} — $${saved.precio.toFixed(2)} guardado`, 'success')
     loadRecientes()
-
+  } catch {
+    await addPending('precio', payload)
+    await refreshPendingCount()
+    const prodName = productos.value.find(p => p.id === payload.producto_id)?.nombre || ''
+    ui.showToast(`${prodName} — $${payload.precio.toFixed(2)} guardado offline (se subirá al reconectar)`, 'info')
+  } finally {
     precioValue.value = null
     unidadValue.value = unidades.value.length === 1 ? unidades.value[0].nombre : ''
     selectedProductoId.value = ''
-  } catch (e: any) {
-    const msg = e.response?.data?.detail || 'Error al guardar precio'
-    ui.showToast(msg, 'error')
-  } finally {
     saving.value = false
   }
 }
