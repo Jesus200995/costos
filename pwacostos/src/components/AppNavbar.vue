@@ -22,12 +22,14 @@
       @click="pendingCount > 0 && (showPending = !showPending)"
       :style="pendingCount > 0 ? 'cursor:pointer' : ''"
     >
-      <span class="conn-dot"></span>
-      <span class="conn-label">{{ isOnline ? 'En línea' : 'Sin conexión' }}</span>
+      <span class="conn-left">
+        <span class="conn-dot"></span>
+        <span class="conn-label">{{ isOnline ? 'En línea' : 'Sin conexión' }}</span>
+      </span>
       <span v-if="pendingCount > 0" class="conn-badge">
-        <UploadCloud :size="11" />
+        <UploadCloud :size="13" />
         {{ pendingCount }} pendiente{{ pendingCount > 1 ? 's' : '' }}
-        <ChevronDown :size="11" :class="{ 'chevron-open': showPending }" />
+        <ChevronDown :size="13" :class="{ 'chevron-open': showPending }" />
       </span>
     </div>
 
@@ -117,11 +119,11 @@ function timeAgo(iso: string): string {
 .conn-bar {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 6px;
   width: 100%;
-  padding: 3px 0;
-  font-size: .7rem;
+  padding: 4px 14px;
+  font-size: .78rem;
   font-weight: 600;
   letter-spacing: .03em;
   transition: background .3s, color .3s;
@@ -133,11 +135,14 @@ function timeAgo(iso: string): string {
 .conn-bar--on .conn-dot { box-shadow: 0 0 6px rgba(255,255,255,.6); }
 .conn-bar--off .conn-dot { animation: blink-dot 1.2s infinite; }
 @keyframes blink-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
+.conn-left {
+  display: flex; align-items: center; gap: 6px;
+}
 .conn-label { white-space: nowrap; }
 .conn-badge {
-  display: flex; align-items: center; gap: 4px;
-  background: rgba(255,255,255,.2);
-  font-size: .6rem; padding: 1px 7px; border-radius: 8px;
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(255,255,255,.22);
+  font-size: .68rem; padding: 2px 9px; border-radius: 8px;
 }
 .conn-badge .chevron-open { transform: rotate(180deg); }
 
