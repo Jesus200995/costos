@@ -899,3 +899,285 @@ def get_filtros_registros(token: str):
         "productos": productos,
         "mercados": mercados,
     }
+
+
+# ═══════════════════════════════════════════════════════════════════
+# MONITOREO — Mapa + Analítica
+# ═══════════════════════════════════════════════════════════════════
+
+@router.get("/monitoreo/mercados")
+def monitoreo_mercados(
+    token: str = None,
+    sw_lat: Optional[float] = None,
+    sw_lng: Optional[float] = None,
+    ne_lat: Optional[float] = None,
+    ne_lng: Optional[float] = None,
+):
+    """Todos los mercados del catálogo DENUE + autorizados + propuestos, para capa base del mapa."""
+    require_admin(token)
+
+    with get_db() as conn:
+        cur = conn.cursor()
+
+        bbox_filter = ""
+        bbox_params: list = []
+        if all(v is not None for v in [sw_lat, sw_lng, ne_lat, ne_lng]):
+            bbox_filter = " WHERE latitud BETWEEN %s AND %s AND longitud BETWEEN %s AND %s"
+            bbox_params = [sw_lat, ne_lat, sw_lng, ne_lng]
+
+        # Catálogo DENUE
+        cur.execute(
+            f"""SELECT id, nombre, tipo AS tipo_mercado, entidad, municipio,
+                       localidad, latitud, longitud, 'DENUE' AS fuente
+                  FROM catalogo_mercados{bbox_filter}""",
+            bbox_params,
+        )
+        denue = [dict(r) for r in cur.fetchall()]
+
+        # Mercados autorizados (creados por usuarios)
+        cur.execute(
+            """SELECT m.id, m.nombre, cm.tipo AS tipo_mercado,
+                      cm.entidad, cm.municipio, cm.localidad,
+                      m.latitud, m.longitud, 'AUTORIZADO' AS fuente
+                 FROM mercados m
+                 LEFT JOIN catalogo_mercados cm ON cm.id = m.catalogo_mercado_id"""
+        )
+        autorizados = [dict(r) for r in cur.fetchall()]
+
+        # Propuestos
+        cur.execute(
+            """SELECT id, nombre_mercado AS nombre, tipo_mercado,
+                      estado AS entidad, municipio, localidad_colonia AS localidad,
+                      latitud, longitud, status,
+                      'PROPUESTO' AS fuente
+                 FROM mercados_propuestos"""
+        )
+        propuestos = [dict(r) for r in cur.fetchall()]
+
+    return {"denue": denue, "autorizados": autorizados, "propuestos": propuestos}
+
+
+@router.get("/monitoreo/precios-mercados")
+def monitoreo_precios_mercados(
+    token: str = None,
+    producto_id: Optional[int] = None,
+    subcategoria_id: Optional[str] = None,
+    categoria_id: Optional[str] = None,
+    tipo_precio: Optional[str] = None,
+    unidad: Optional[str] = None,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None,
+):
+    """Mercados que tienen reportes de precios, con precio promedio/último, filtrado por producto."""
+    require_admin(token)
+
+    with get_db() as conn:
+        cur = conn.cursor()
+
+        where_clauses = []
+        params: list = []
+
+        if producto_id:
+            where_clauses.append("dp.producto_id = %s")
+            params.append(producto_id)
+        if subcategoria_id:
+            where_clauses.append("p.subcategoria_id = %s")
+            params.append(subcategoria_id)
+        if categoria_id:
+            where_clauses.append("s.categoria_id = %s")
+            params.append(categoria_id)
+        if tipo_precio and tipo_precio in ("MENUDEO", "MAYOREO"):
+            where_clauses.append("rp.tipo_precio = %s")
+            params.append(tipo_precio)
+        if unidad:
+            where_clauses.append("dp.unidad = %s")
+            params.append(unidad)
+        if fecha_desde:
+            where_clauses.append("rp.fecha >= %s")
+            params.append(fecha_desde)
+        if fecha_hasta:
+            where_clauses.append("rp.fecha <= %s")
+            params.append(fecha_hasta)
+
+        where_sql = (" AND " + " AND ".join(where_clauses)) if where_clauses else ""
+
+        cur.execute(
+            f"""SELECT m.id AS mercado_id, m.nombre AS mercado_nombre,
+                       cm.entidad, cm.municipio, cm.tipo AS tipo_mercado,
+                       m.latitud, m.longitud,
+                       ROUND(AVG(dp.precio)::numeric, 2) AS precio_promedio,
+                       ROUND(MIN(dp.precio)::numeric, 2) AS precio_min,
+                       ROUND(MAX(dp.precio)::numeric, 2) AS precio_max,
+                       COUNT(dp.id) AS num_reportes,
+                       MAX(rp.fecha) AS ultimo_reporte,
+                       MAX(rp.created_at) AS ultima_captura
+                  FROM detalle_precios dp
+                  JOIN reportes_precios rp ON rp.id = dp.reporte_id
+                  JOIN mercados m ON m.id = rp.mercado_id
+                  LEFT JOIN catalogo_mercados cm ON cm.id = m.catalogo_mercado_id
+                  JOIN productos p ON p.id = dp.producto_id
+                  JOIN subcategorias s ON s.id = p.subcategoria_id
+                 WHERE 1=1{where_sql}
+                 GROUP BY m.id, m.nombre, cm.entidad, cm.municipio, cm.tipo,
+                          m.latitud, m.longitud""",
+            params,
+        )
+        mercados = []
+        for r in cur.fetchall():
+            d = dict(r)
+            if d.get("ultimo_reporte"):
+                d["ultimo_reporte"] = d["ultimo_reporte"].isoformat()
+            if d.get("ultima_captura"):
+                d["ultima_captura"] = d["ultima_captura"].isoformat()
+            d["precio_promedio"] = float(d["precio_promedio"]) if d["precio_promedio"] else 0
+            d["precio_min"] = float(d["precio_min"]) if d["precio_min"] else 0
+            d["precio_max"] = float(d["precio_max"]) if d["precio_max"] else 0
+            mercados.append(d)
+
+    return mercados
+
+
+@router.get("/monitoreo/precios-estado")
+def monitoreo_precios_estado(
+    token: str = None,
+    producto_id: Optional[int] = None,
+    subcategoria_id: Optional[str] = None,
+    categoria_id: Optional[str] = None,
+    tipo_precio: Optional[str] = None,
+    unidad: Optional[str] = None,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None,
+):
+    """Estadísticas agregadas por estado para gráfica de barras."""
+    require_admin(token)
+
+    with get_db() as conn:
+        cur = conn.cursor()
+
+        where_clauses = []
+        params: list = []
+
+        if producto_id:
+            where_clauses.append("dp.producto_id = %s")
+            params.append(producto_id)
+        if subcategoria_id:
+            where_clauses.append("p.subcategoria_id = %s")
+            params.append(subcategoria_id)
+        if categoria_id:
+            where_clauses.append("s.categoria_id = %s")
+            params.append(categoria_id)
+        if tipo_precio and tipo_precio in ("MENUDEO", "MAYOREO"):
+            where_clauses.append("rp.tipo_precio = %s")
+            params.append(tipo_precio)
+        if unidad:
+            where_clauses.append("dp.unidad = %s")
+            params.append(unidad)
+        if fecha_desde:
+            where_clauses.append("rp.fecha >= %s")
+            params.append(fecha_desde)
+        if fecha_hasta:
+            where_clauses.append("rp.fecha <= %s")
+            params.append(fecha_hasta)
+
+        where_sql = (" AND " + " AND ".join(where_clauses)) if where_clauses else ""
+
+        cur.execute(
+            f"""SELECT cm.entidad AS estado,
+                       ROUND(AVG(dp.precio)::numeric, 2) AS promedio,
+                       ROUND(MIN(dp.precio)::numeric, 2) AS minimo,
+                       ROUND(MAX(dp.precio)::numeric, 2) AS maximo,
+                       COUNT(dp.id) AS num_reportes,
+                       COUNT(DISTINCT m.id) AS num_mercados
+                  FROM detalle_precios dp
+                  JOIN reportes_precios rp ON rp.id = dp.reporte_id
+                  JOIN mercados m ON m.id = rp.mercado_id
+                  LEFT JOIN catalogo_mercados cm ON cm.id = m.catalogo_mercado_id
+                  JOIN productos p ON p.id = dp.producto_id
+                  JOIN subcategorias s ON s.id = p.subcategoria_id
+                 WHERE cm.entidad IS NOT NULL{where_sql}
+                 GROUP BY cm.entidad
+                 ORDER BY promedio DESC""",
+            params,
+        )
+        estados = []
+        for r in cur.fetchall():
+            d = dict(r)
+            d["promedio"] = float(d["promedio"]) if d["promedio"] else 0
+            d["minimo"] = float(d["minimo"]) if d["minimo"] else 0
+            d["maximo"] = float(d["maximo"]) if d["maximo"] else 0
+            estados.append(d)
+
+        # KPIs
+        total_estados_con_reporte = len(estados)
+        cur.execute("SELECT COUNT(DISTINCT entidad) FROM catalogo_mercados WHERE entidad IS NOT NULL")
+        total_estados = cur.fetchone()["count"]
+
+    promedio_nacional = round(sum(e["promedio"] for e in estados) / len(estados), 2) if estados else 0
+    estado_max = max(estados, key=lambda e: e["maximo"]) if estados else None
+    estado_min = min(estados, key=lambda e: e["minimo"]) if estados else None
+
+    return {
+        "estados": estados,
+        "kpis": {
+            "promedio_nacional": promedio_nacional,
+            "estado_max": estado_max,
+            "estado_min": estado_min,
+            "cobertura": f"{total_estados_con_reporte}/{total_estados}",
+            "total_reportes": sum(e["num_reportes"] for e in estados),
+        }
+    }
+
+
+@router.get("/monitoreo/mercado/{mercado_id}/precios")
+def monitoreo_mercado_precios(
+    mercado_id: int,
+    token: str = None,
+    producto_id: Optional[int] = None,
+):
+    """Detalle de precios de un mercado específico — para popup del mapa."""
+    require_admin(token)
+
+    with get_db() as conn:
+        cur = conn.cursor()
+
+        # Info del mercado
+        cur.execute(
+            """SELECT m.id, m.nombre, m.latitud, m.longitud,
+                      cm.entidad, cm.municipio, cm.localidad, cm.tipo AS tipo_mercado
+                 FROM mercados m
+                 LEFT JOIN catalogo_mercados cm ON cm.id = m.catalogo_mercado_id
+                WHERE m.id = %s""",
+            (mercado_id,),
+        )
+        mercado = cur.fetchone()
+        if not mercado:
+            raise HTTPException(404, "Mercado no encontrado")
+
+        # Últimos precios
+        where_prod = "AND dp.producto_id = %s" if producto_id else ""
+        params: list = [mercado_id]
+        if producto_id:
+            params.append(producto_id)
+
+        cur.execute(
+            f"""SELECT dp.id, p.nombre AS producto, dp.precio, dp.unidad,
+                       rp.tipo_precio, rp.fecha, rp.created_at,
+                       u.nombre || ' ' || u.apellido_paterno AS capturista
+                  FROM detalle_precios dp
+                  JOIN reportes_precios rp ON rp.id = dp.reporte_id
+                  JOIN productos p ON p.id = dp.producto_id
+                  JOIN users u ON u.id = rp.user_id
+                 WHERE rp.mercado_id = %s {where_prod}
+                 ORDER BY rp.created_at DESC
+                 LIMIT 20""",
+            params,
+        )
+        precios = []
+        for r in cur.fetchall():
+            d = dict(r)
+            d["fecha"] = d["fecha"].isoformat() if d["fecha"] else None
+            d["created_at"] = d["created_at"].isoformat() if d["created_at"] else None
+            d["precio"] = float(d["precio"])
+            precios.append(d)
+
+    return {"mercado": dict(mercado), "precios": precios}
